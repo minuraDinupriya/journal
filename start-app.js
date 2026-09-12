@@ -4,7 +4,8 @@ console.log("Starting TradeJournal Server...");
 console.log("Please wait while the application boots up...\n");
 
 const nextProcess = spawn(/^win/.test(process.platform) ? 'npm.cmd' : 'npm', ['run', 'dev'], {
-  stdio: 'pipe'
+  stdio: 'pipe',
+  shell: true
 });
 
 let opened = false;
@@ -21,8 +22,8 @@ nextProcess.stdout.on('data', (data) => {
     console.log("Close this window to completely shut down.");
     console.log("=============================================\n");
     
-    // Try to open in Chrome App Mode, fallback to Edge App Mode, fallback to default browser
-    exec('start chrome --app=http://localhost:3000 || start msedge --app=http://localhost:3000 || start http://localhost:3000');
+    // Try to open in Brave App Mode, fallback to Chrome, fallback to Edge, fallback to default browser
+    exec('start brave --app=http://localhost:3000 || start chrome --app=http://localhost:3000 || start msedge --app=http://localhost:3000 || start http://localhost:3000');
   }
 });
 
