@@ -1,0 +1,232 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Trade } from "@/types"
+import { ASSET_CLASSES, EMOTIONAL_STATES } from "@/lib/constants"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChartUpload } from "@/components/trades/chart-upload"
+import { Loader2 } from "lucide-react"
+
+const tradeSchema = z.object({
+  asset: z.string().min(1, "Asset is required"),
+  assetClass: z.string().optional(),
+  direction: z.enum(["LONG", "SHORT"]),
+  entryPrice: z.number().min(0, "Entry price must be positive"),
+  exitPrice: z.number().optional(),
+  size: z.number().min(0, "Size must be positive"),
+  fees: z.number().default(0),
+  entryDate: z.string().min(1, "Entry date is required"),
+  exitDate: z.string().optional(),
+  strategy: z.string().optional(),
+  setup: z.string().optional(),
+  preTradeNotes: z.string().optional(),
+  postTradeNotes: z.string().optional(),
+  emotion: z.string().optional(),
+  tradingViewLink: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  chartImage: z.string().optional()
+})
+
+type TradeFormData = z.infer<typeof tradeSchema>
+
+interface TradeFormProps {
+  mode: 'create' | 'edit'
+  initialData?: Trade
+  onSubmit: (data: TradeFormData) => Promise<void>
+  isSubmitting: boolean
+}
+
+export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFormProps) {
+  const router = useRouter()
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TradeFormData>({
+    resolver: zodResolver(tradeSchema),
+    defaultValues: {
+      asset: initialData?.asset || "",
+      assetClass: initialData?.assetClass || "",
+      direction: initialData?.direction || "LONG",
+      entryPrice: initialData?.entryPrice || 0,
+      exitPrice: initialData?.exitPrice || undefined,
+      size: initialData?.size || 0,
+      fees: initialData?.fees || 0,
+      entryDate: initialData?.entryDate ? new Date(initialData.entryDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+      exitDate: initialData?.exitDate ? new Date(initialData.exitDate).toISOString().slice(0, 16) : undefined,
+      strategy: initialData?.strategy || "",
+      setup: initialData?.setup || "",
+      preTradeNotes: initialData?.preTradeNotes || "",
+      postTradeNotes: initialData?.postTradeNotes || "",
+      emotion: initialData?.emotion || "",
+      tradingViewLink: initialData?.tradingViewLink || "",
+      chartImage: initialData?.chartImage || ""
+    }
+  })
+
+  const [calculatedPnl, setCalculatedPnl] = useState<number | null>(null)
+
+  const direction = watch("direction")
+  const entryPrice = watch("entryPrice")
+  const exitPrice = watch("exitPrice")
+  const size = watch("size")
+  const fees = watch("fees")
+  const emotion = watch("emotion")
+  const assetClass = watch("assetClass")
+  const chartImage = watch("chartImage")
+
+  useEffect(() => {
+    if (entryPrice > 0 && exitPrice !== undefined && exitPrice > 0 && size > 0) {
+      let pnl = 0
+      if (direction === "LONG") {
+        pnl = (exitPrice - entryPrice) * size
+      } else {
+        pnl = (entryPrice - exitPrice) * size
+      }
+      pnl -= (fees || 0)
+      setCalculatedPnl(pnl)
+    } else {
+      setCalculatedPnl(null)
+    }
+  }, [entryPrice, exitPrice, size, direction, fees])
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="asset">Asset</Label>
+          <Input id="asset" {...register("asset")} placeholder="e.g. AAPL, EURUSD, BTC" />
+          {errors.asset && <p className="text-red-500 text-sm">{errors.asset.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="assetClass">Asset Class</Label>
+          <Select value={assetClass} onValueChange={(val) => setValue("assetClass", val)}>
+            <SelectTrigger id="assetClass">
+              <SelectValue placeholder="Select Asset Class" />
+            </SelectTrigger>
+            <SelectContent>
+              {ASSET_CLASSES?.map(ac => (
+                <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="direction">Direction</Label>
+          <Select value={direction} onValueChange={(val: "LONG" | "SHORT") => setValue("direction", val)}>
+            <SelectTrigger id="direction">
+              <SelectValue placeholder="Select Direction" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LONG">LONG</SelectItem>
+              <SelectItem value="SHORT">SHORT</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="size">Size</Label>
+          <Input id="size" type="number" step="any" {...register("size", { valueAsNumber: true })} />
+          {errors.size && <p className="text-red-500 text-sm">{errors.size.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="entryPrice">Entry Price</Label>
+          <Input id="entryPrice" type="number" step="any" {...register("entryPrice", { valueAsNumber: true })} />
+          {errors.entryPrice && <p className="text-red-500 text-sm">{errors.entryPrice.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="exitPrice">Exit Price</Label>
+          <Input id="exitPrice" type="number" step="any" {...register("exitPrice", { valueAsNumber: true, setValueAs: v => v === "" ? undefined : parseFloat(v) })} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="fees">Fees</Label>
+          <Input id="fees" type="number" step="any" {...register("fees", { valueAsNumber: true })} />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Estimated P&L</Label>
+          <div className={`p-2 border rounded-md font-semibold ${calculatedPnl !== null ? (calculatedPnl > 0 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50') : 'text-muted-foreground bg-muted'}`}>
+            {calculatedPnl !== null ? `$${calculatedPnl.toFixed(2)}` : "Awaiting entry/exit/size"}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="entryDate">Entry Date</Label>
+          <Input id="entryDate" type="datetime-local" {...register("entryDate")} />
+          {errors.entryDate && <p className="text-red-500 text-sm">{errors.entryDate.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="exitDate">Exit Date</Label>
+          <Input id="exitDate" type="datetime-local" {...register("exitDate")} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="strategy">Strategy</Label>
+          <Input id="strategy" {...register("strategy")} placeholder="e.g. Breakout" />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="setup">Setup</Label>
+          <Input id="setup" {...register("setup")} placeholder="e.g. Bull Flag" />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="emotion">Emotional State</Label>
+          <Select value={emotion} onValueChange={(val) => setValue("emotion", val)}>
+            <SelectTrigger id="emotion">
+              <SelectValue placeholder="How did you feel?" />
+            </SelectTrigger>
+            <SelectContent>
+              {EMOTIONAL_STATES?.map(emo => (
+                <SelectItem key={emo.value} value={emo.value}>
+                  <span className="mr-2">{emo.emoji}</span>
+                  {emo.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="preTradeNotes">Pre-Trade Notes</Label>
+          <Textarea id="preTradeNotes" {...register("preTradeNotes")} placeholder="What was your thesis?" rows={3} />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="postTradeNotes">Post-Trade Notes</Label>
+          <Textarea id="postTradeNotes" {...register("postTradeNotes")} placeholder="What went well? What could be improved?" rows={3} />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="tradingViewLink">TradingView Link</Label>
+          <Input id="tradingViewLink" {...register("tradingViewLink")} placeholder="https://www.tradingview.com/x/..." />
+          {errors.tradingViewLink && <p className="text-red-500 text-sm">{errors.tradingViewLink.message}</p>}
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label>Chart Screenshot</Label>
+          <ChartUpload value={chartImage} onChange={(path) => setValue("chartImage", path || "")} />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-4 pt-4 border-t">
+        <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {mode === 'create' ? 'Create Trade' : 'Save Changes'}
+        </Button>
+      </div>
+    </form>
+  )
+}

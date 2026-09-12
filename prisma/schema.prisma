@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String   @default("Trader")
+  email     String?  @unique
+  geminiApiKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trades    Trade[]
+  journalEntries JournalEntry[]
+  aiMessages AiCoachMessage[]
+}
+
+model Trade {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset           String
+  assetClass      String   @default("FOREX")
+  direction       String   // LONG or SHORT
+  entryPrice      Float
+  exitPrice       Float?
+  size            Float
+  fees            Float    @default(0)
+  entryDate       DateTime
+  exitDate        DateTime?
+  pnl             Float?
+  strategy        String?
+  setup           String?
+  preTradeNotes   String?
+  postTradeNotes  String?
+  emotionalState  String?
+  chartImagePath  String?
+  tradingViewLink String?
+  source          String   @default("MANUAL")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tags            TagOnTrade[]
+
+  @@index([userId])
+  @@index([entryDate])
+  @@index([asset])
+}
+
+model Tag {
+  id     String       @id @default(cuid())
+  name   String       @unique
+  color  String       @default("#6366f1")
+  trades TagOnTrade[]
+}
+
+model TagOnTrade {
+  tradeId String
+  tagId   String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, tagId])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  content   String
+  mood      Int      @default(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+}
+
+model AiCoachMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // user or assistant
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
