@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TiltmeterData } from "@/types";
+import { TiltmeterData } from "@/types/metrics";
 import { formatCurrency } from "@/lib/utils";
 import {
   Bar,
@@ -68,7 +68,7 @@ export function Tiltmeter({ data, isLoading }: TiltmeterProps) {
                       const item = payload[0].payload as TiltmeterData;
                       return (
                         <div className="rounded-lg border bg-background p-3 shadow-sm">
-                          <p className="font-medium mb-1">{item.emotion}</p>
+                          <p className="font-medium mb-1">{item.emotionalState}</p>
                           <div className="grid gap-1">
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground text-sm">Avg P&L:</span>

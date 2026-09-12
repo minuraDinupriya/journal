@@ -21,11 +21,13 @@ interface TradeStoreState {
 }
 
 const defaultFilters: TradeFilter = {
-  dateRange: undefined,
-  status: undefined,
-  symbol: undefined,
-  setup: undefined,
-  tags: undefined,
+  assetClass: undefined,
+  strategy: undefined,
+  emotionalState: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  direction: undefined,
+  source: undefined,
 };
 
 export const useTradeStore = create<TradeStoreState>((set) => ({

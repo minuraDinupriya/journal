@@ -20,7 +20,7 @@ Current Statistics Summary:
 - Total PnL: ${metrics.totalPnl}
 - Average Win: ${metrics.averageWin.toFixed(2)}
 - Average Loss: ${metrics.averageLoss.toFixed(2)}
-- Max Drawdown: ${metrics.maxDrawdownPercentage.toFixed(2)}%
+- Max Drawdown: ${metrics.maxDrawdown.toFixed(2)}
 
 Last 10 Trades:
 ${recentTradesStr || 'No recent trades.'}
@@ -45,11 +45,12 @@ export async function getAiCoachResponse(apiKey: string, userMessage: string, sy
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
-      systemInstruction: systemPrompt,
     });
 
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      contents: [
+        { role: 'user', parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
+      ],
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: 2048,
@@ -71,9 +72,10 @@ export async function generateTradeInsight(apiKey: string, trade: Trade): Promis
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
-      systemInstruction: 'You are an expert trading coach. Provide a short, insightful analysis of a single trade.',
     });
 
+    const systemInstruction = 'You are an expert trading coach. Provide a short, insightful analysis of a single trade.';
+    
     const tradeInfo = `
 Trade Details:
 - Asset: ${trade.asset} (${trade.assetClass})
@@ -81,11 +83,11 @@ Trade Details:
 - Entry Date: ${new Date(trade.entryDate).toLocaleString()}
 - PnL: ${trade.pnl}
 - Emotion: ${trade.emotionalState}
-- Setup/Notes: ${trade.setup} / ${trade.notes}
+- Setup/Notes: ${trade.setup} / ${trade.postTradeNotes}
 `;
 
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: `Analyze this trade and provide a brief insight:\n${tradeInfo}` }] }],
+      contents: [{ role: 'user', parts: [{ text: systemInstruction + '\n\n' + tradeInfo }] }],
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: 500,

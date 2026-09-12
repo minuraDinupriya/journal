@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Trade } from "@/types"
+import { Trade } from "@/types/trade"
 import { format } from "date-fns"
 import { EMOTIONAL_STATES } from "@/lib/constants"
 import {
@@ -111,7 +111,7 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
           {sortedTrades.map((trade) => {
             const isProfit = (trade.pnl || 0) > 0
             const isLoss = (trade.pnl || 0) < 0
-            const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotion)
+            const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotionalState)
 
             return (
               <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/trades/${trade.id}`)}>

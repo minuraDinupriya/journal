@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardMetrics } from "@/types";
+import { DashboardMetrics } from "@/types/metrics";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {

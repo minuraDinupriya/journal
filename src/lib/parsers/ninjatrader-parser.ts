@@ -65,7 +65,7 @@ export function parseNinjaTraderCsv(csvContent: string): CsvParseResult<TradeFor
 
         const tradeData: TradeFormData = {
           asset,
-          assetClass: assetClass === 'OTHER' ? 'FUTURES' : assetClass,
+          assetClass: (assetClass as string) === 'OTHER' ? 'FUTURES' : assetClass,
           direction,
           entryDate: parseNtDateTime(row['Entry time']).toISOString(),
           exitDate: row['Exit time'] ? parseNtDateTime(row['Exit time']).toISOString() : null,

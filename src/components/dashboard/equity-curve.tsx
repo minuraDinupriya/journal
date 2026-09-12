@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EquityPoint } from "@/types";
+import { EquityPoint } from "@/types/metrics";
 import { formatCurrency } from "@/lib/utils";
 import {
   Area,

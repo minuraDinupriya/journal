@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTrades, createTrade } from "@/lib/db/trade-repository";
+import { tradeFormSchema } from "@/lib/validators/trade-validator";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 
 export async function GET(request: Request) {
@@ -34,8 +35,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const validatedData = tradeFormSchema.parse(body);
     
-    const trade = await createTrade({ ...body, userId: DEFAULT_USER_ID });
+    const trade = await createTrade({ ...validatedData, userId: DEFAULT_USER_ID });
     
     return NextResponse.json(trade, { status: 201 });
   } catch (error) {

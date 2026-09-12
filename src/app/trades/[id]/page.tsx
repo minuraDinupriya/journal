@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react"
 import { format } from "date-fns"
-import { Trade } from "@/types"
+import { Trade } from "@/types/trade"
 import { EMOTIONAL_STATES } from "@/lib/constants"
 import {
   AlertDialog,
@@ -56,9 +56,20 @@ export default function TradeDetailsPage() {
     router.push("/trades")
   }
 
-  const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotion)
+  const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotionalState)
   const isProfit = (trade.pnl || 0) > 0
   const isLoss = (trade.pnl || 0) < 0
+
+  let chartImages: string[] = []
+  if (trade.chartImagePath) {
+    try {
+      chartImages = trade.chartImagePath.startsWith('[') 
+        ? JSON.parse(trade.chartImagePath) 
+        : [trade.chartImagePath]
+    } catch {
+      chartImages = [trade.chartImagePath]
+    }
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-4xl space-y-6">
@@ -175,22 +186,33 @@ export default function TradeDetailsPage() {
             )}
           </div>
 
-          {(trade.tradingViewLink || trade.chartImage) && (
+          {(trade.tradingViewLink || chartImages.length > 0) && (
             <div className="mt-8 pt-8 border-t space-y-6">
               {trade.tradingViewLink && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">TradingView</h3>
-                  <a href={trade.tradingViewLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-500 hover:underline">
-                    View Chart on TradingView <ExternalLink className="w-4 h-4 ml-1" />
+                  <h3 className="text-lg font-semibold mb-2">TradingView Chart</h3>
+                  <a 
+                    href={trade.tradingViewLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-primary hover:underline"
+                  >
+                    View Chart on TradingView <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </div>
               )}
-              {trade.chartImage && (
+              {chartImages.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Chart Screenshot</h3>
-                  <div className="rounded-lg overflow-hidden border max-w-2xl">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={trade.chartImage} alt="Trade Chart" className="w-full h-auto object-cover" />
+                  <h3 className="text-lg font-semibold mb-2">Attached Images ({chartImages.length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {chartImages.map((imgUrl, idx) => (
+                      <div key={idx} className="rounded-lg overflow-hidden border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <a href={imgUrl} target="_blank" rel="noopener noreferrer">
+                          <img src={imgUrl} alt={`Trade Chart ${idx + 1}`} className="w-full h-auto object-cover hover:opacity-90 transition-opacity" />
+                        </a>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

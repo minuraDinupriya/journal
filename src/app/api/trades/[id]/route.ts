@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTradeById, updateTrade, deleteTrade } from "@/lib/db/trade-repository";
-import { tradeSchema } from "@/lib/validators/trade-validator";
+import { tradeFormSchema } from "@/lib/validators/trade-validator";
 
 export async function GET(
   request: Request,
@@ -24,7 +24,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const validatedData = tradeSchema.partial().parse(body);
+    const validatedData = tradeFormSchema.partial().parse(body);
     
     const trade = await updateTrade(params.id, validatedData);
     return NextResponse.json(trade);

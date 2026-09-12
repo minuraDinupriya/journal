@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useAiCoach } from "@/hooks/useAiCoach";
+import { useAiCoach } from "@/hooks/use-ai-coach";
 import { cn } from "@/lib/utils";
 
 export function ChatInterface() {
@@ -56,7 +56,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full bg-card">
-      <ScrollArea className="flex-grow p-4 md:p-6" viewportRef={scrollRef}>
+      <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8 text-center space-y-4">
             <Bot className="h-12 w-12 opacity-50" />

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMetrics, useTrades } from "@/hooks/useData";
+import { useMetrics } from "@/hooks/use-metrics";
+import { useTrades } from "@/hooks/use-trades";
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
 import { EquityCurve } from "@/components/dashboard/equity-curve";
 import { Tiltmeter } from "@/components/dashboard/tiltmeter";
@@ -9,21 +10,22 @@ import { FilterBar } from "@/components/dashboard/filter-bar";
 import { RecentTrades } from "@/components/dashboard/recent-trades";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw } from "lucide-react";
-import { TradeFilter } from "@/types";
+import { TradeFilter } from "@/types/metrics";
 
 export default function DashboardPage() {
   const [filters, setFilters] = useState<TradeFilter>({});
   
-  const { metrics, equityCurve, tiltmeter, isLoading: metricsLoading, refetch: refetchMetrics } = useMetrics(filters);
-  const { trades, isLoading: tradesLoading, refetch: refetchTrades } = useTrades(filters);
+  const { metrics, equityCurve, tiltmeter, isLoading: metricsLoading, refreshMetrics } = useMetrics();
+  const { trades, isLoading: tradesLoading, fetchTrades } = useTrades();
 
   const handleRefresh = () => {
-    refetchMetrics();
-    refetchTrades();
+    refreshMetrics();
+    fetchTrades(filters);
   };
 
   const handleFilterChange = (newFilters: TradeFilter) => {
     setFilters(newFilters);
+    fetchTrades(newFilters);
   };
 
   return (

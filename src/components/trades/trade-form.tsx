@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Trade } from "@/types"
+import { Trade } from "@/types/trade"
 import { ASSET_CLASSES, EMOTIONAL_STATES } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,27 +14,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartUpload } from "@/components/trades/chart-upload"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
-const tradeSchema = z.object({
-  asset: z.string().min(1, "Asset is required"),
-  assetClass: z.string().optional(),
-  direction: z.enum(["LONG", "SHORT"]),
-  entryPrice: z.number().min(0, "Entry price must be positive"),
-  exitPrice: z.number().optional(),
-  size: z.number().min(0, "Size must be positive"),
-  fees: z.number().default(0),
-  entryDate: z.string().min(1, "Entry date is required"),
-  exitDate: z.string().optional(),
-  strategy: z.string().optional(),
-  setup: z.string().optional(),
-  preTradeNotes: z.string().optional(),
-  postTradeNotes: z.string().optional(),
-  emotion: z.string().optional(),
-  tradingViewLink: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  chartImage: z.string().optional()
-})
-
-type TradeFormData = z.infer<typeof tradeSchema>
+import { tradeFormSchema, TradeFormData } from "@/lib/validators/trade-validator"
 
 interface TradeFormProps {
   mode: 'create' | 'edit'
@@ -46,7 +28,7 @@ interface TradeFormProps {
 export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFormProps) {
   const router = useRouter()
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TradeFormData>({
-    resolver: zodResolver(tradeSchema),
+    resolver: zodResolver(tradeFormSchema) as any,
     defaultValues: {
       asset: initialData?.asset || "",
       assetClass: initialData?.assetClass || "",
@@ -61,9 +43,11 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
       setup: initialData?.setup || "",
       preTradeNotes: initialData?.preTradeNotes || "",
       postTradeNotes: initialData?.postTradeNotes || "",
-      emotion: initialData?.emotion || "",
+      emotionalState: initialData?.emotionalState || "",
       tradingViewLink: initialData?.tradingViewLink || "",
-      chartImage: initialData?.chartImage || ""
+      chartImages: initialData?.chartImagePath 
+        ? (initialData.chartImagePath.startsWith('[') ? JSON.parse(initialData.chartImagePath) : [initialData.chartImagePath])
+        : []
     }
   })
 
@@ -74,12 +58,12 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
   const exitPrice = watch("exitPrice")
   const size = watch("size")
   const fees = watch("fees")
-  const emotion = watch("emotion")
+  const emotionalState = watch("emotionalState")
   const assetClass = watch("assetClass")
-  const chartImage = watch("chartImage")
+  const chartImages = watch("chartImages")
 
   useEffect(() => {
-    if (entryPrice > 0 && exitPrice !== undefined && exitPrice > 0 && size > 0) {
+    if (entryPrice > 0 && exitPrice !== undefined && exitPrice !== null && exitPrice > 0 && size > 0) {
       let pnl = 0
       if (direction === "LONG") {
         pnl = (exitPrice - entryPrice) * size
@@ -93,8 +77,12 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
     }
   }, [entryPrice, exitPrice, size, direction, fees])
 
+  const onError = (formErrors: any) => {
+    toast.error("Please fill in all required fields correctly.");
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="asset">Asset</Label>
@@ -110,7 +98,7 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
             </SelectTrigger>
             <SelectContent>
               {ASSET_CLASSES?.map(ac => (
-                <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+                <SelectItem key={ac.value} value={ac.value}>{ac.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -131,24 +119,24 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
         
         <div className="space-y-2">
           <Label htmlFor="size">Size</Label>
-          <Input id="size" type="number" step="any" {...register("size", { valueAsNumber: true })} />
+          <Input id="size" type="number" step="any" {...register("size", { setValueAs: v => v === "" ? 0 : parseFloat(v) })} />
           {errors.size && <p className="text-red-500 text-sm">{errors.size.message}</p>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="entryPrice">Entry Price</Label>
-          <Input id="entryPrice" type="number" step="any" {...register("entryPrice", { valueAsNumber: true })} />
+          <Input id="entryPrice" type="number" step="any" {...register("entryPrice", { setValueAs: v => v === "" ? 0 : parseFloat(v) })} />
           {errors.entryPrice && <p className="text-red-500 text-sm">{errors.entryPrice.message}</p>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="exitPrice">Exit Price</Label>
-          <Input id="exitPrice" type="number" step="any" {...register("exitPrice", { valueAsNumber: true, setValueAs: v => v === "" ? undefined : parseFloat(v) })} />
+          <Input id="exitPrice" type="number" step="any" {...register("exitPrice", { setValueAs: v => v === "" ? undefined : parseFloat(v) })} />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="fees">Fees</Label>
-          <Input id="fees" type="number" step="any" {...register("fees", { valueAsNumber: true })} />
+          <Input id="fees" type="number" step="any" {...register("fees", { setValueAs: v => v === "" ? 0 : parseFloat(v) })} />
         </div>
 
         <div className="space-y-2">
@@ -180,9 +168,9 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="emotion">Emotional State</Label>
-          <Select value={emotion} onValueChange={(val) => setValue("emotion", val)}>
-            <SelectTrigger id="emotion">
+          <Label htmlFor="emotionalState">Emotional State</Label>
+          <Select value={emotionalState || undefined} onValueChange={(val) => setValue("emotionalState", val)}>
+            <SelectTrigger id="emotionalState">
               <SelectValue placeholder="How did you feel?" />
             </SelectTrigger>
             <SelectContent>
@@ -213,8 +201,8 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label>Chart Screenshot</Label>
-          <ChartUpload value={chartImage} onChange={(path) => setValue("chartImage", path || "")} />
+          <Label>Chart Screenshots</Label>
+          <ChartUpload value={chartImages || []} onChange={(paths) => setValue("chartImages", paths)} />
         </div>
       </div>
 

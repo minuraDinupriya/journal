@@ -12,10 +12,11 @@ export async function GET(request: Request) {
   try {
     const trades = await getTrades({ userId: DEFAULT_USER_ID });
 
-    const metrics = calculateAllMetrics(trades);
-    const equityCurve = calculateEquityCurve(trades);
-    const tiltmeter = calculateTiltmeter(trades);
-    const dailyPnl = calculateDailyPnl(trades);
+    const typedTrades = trades as any;
+    const metrics = calculateAllMetrics(typedTrades);
+    const equityCurve = calculateEquityCurve(typedTrades);
+    const tiltmeter = calculateTiltmeter(typedTrades);
+    const dailyPnl = calculateDailyPnl(typedTrades);
 
     return NextResponse.json({
       metrics,

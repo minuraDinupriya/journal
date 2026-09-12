@@ -20,7 +20,7 @@ export type TradeFormData = {
   preTradeNotes?: string | null;
   postTradeNotes?: string | null;
   emotionalState?: string | null;
-  chartImagePath?: string | null;
+  chartImages?: string[];
   tradingViewLink?: string | null;
   source?: string;
   tagIds?: string[];
@@ -38,7 +38,7 @@ export type TradeFilter = {
 
 export async function createTrade(data: TradeFormData & { userId: string }) {
   try {
-    const { tagIds, entryDate, exitDate, ...rest } = data;
+    const { tagIds, entryDate, exitDate, chartImages, ...rest } = data;
     
     return await prisma.trade.create({
       data: {
@@ -47,11 +47,10 @@ export async function createTrade(data: TradeFormData & { userId: string }) {
         assetClass: rest.assetClass.toUpperCase(),
         entryDate: new Date(entryDate),
         exitDate: exitDate ? new Date(exitDate) : null,
+        chartImagePath: chartImages && chartImages.length > 0 ? JSON.stringify(chartImages) : null,
         tags: tagIds && tagIds.length > 0 ? {
-          create: tagIds.map(tagId => ({
-            tag: { connect: { id: tagId } }
-          }))
-        } : undefined,
+          create: tagIds.map(id => ({ tag: { connect: { id } } }))
+        } : undefined
       },
       include: {
         tags: { include: { tag: true } }
@@ -110,13 +109,14 @@ export async function getTradeById(id: string) {
 
 export async function updateTrade(id: string, data: Partial<TradeFormData>) {
   try {
-    const { tagIds, entryDate, exitDate, ...rest } = data;
+    const { tagIds, entryDate, exitDate, chartImages, ...rest } = data;
     const updateData: any = { ...rest };
     
     if (rest.direction) updateData.direction = rest.direction.toUpperCase();
     if (rest.assetClass) updateData.assetClass = rest.assetClass.toUpperCase();
     if (entryDate) updateData.entryDate = new Date(entryDate);
     if (exitDate !== undefined) updateData.exitDate = exitDate ? new Date(exitDate) : null;
+    if (chartImages !== undefined) updateData.chartImagePath = chartImages.length > 0 ? JSON.stringify(chartImages) : null;
     
     if (tagIds !== undefined) {
       updateData.tags = {

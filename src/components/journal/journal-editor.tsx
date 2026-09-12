@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoodSelector } from "@/components/journal/mood-selector";
-import { JournalEntry, JournalFormData } from "@/types";
+import { JournalEntry, JournalFormData } from "@/types/journal";
 import { Loader2 } from "lucide-react";
 
 interface JournalEditorProps {

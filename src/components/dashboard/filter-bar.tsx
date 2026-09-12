@@ -1,6 +1,7 @@
 "use client";
 
-import { Trade, TradeFilter } from "@/types";
+import { Trade } from "@/types/trade";
+import { TradeFilter } from "@/types/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +49,7 @@ export function FilterBar({ onFilterChange, trades }: FilterBarProps) {
         <Label htmlFor="assetClass" className="text-xs">Asset Class</Label>
         <Select 
           value={localFilters.assetClass || "all"} 
-          onValueChange={(val) => setLocalFilters(prev => ({ ...prev, assetClass: val === "all" ? undefined : val }))}
+          onValueChange={(val) => setLocalFilters(prev => ({ ...prev, assetClass: val === "all" ? undefined : val as any }))}
         >
           <SelectTrigger id="assetClass" className="w-[140px] h-9">
             <SelectValue placeholder="All Assets" />
@@ -56,7 +57,7 @@ export function FilterBar({ onFilterChange, trades }: FilterBarProps) {
           <SelectContent>
             <SelectItem value="all">All Assets</SelectItem>
             {ASSET_CLASSES.map(ac => (
-              <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+              <SelectItem key={ac.value} value={ac.value}>{ac.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -84,7 +85,7 @@ export function FilterBar({ onFilterChange, trades }: FilterBarProps) {
         <Label htmlFor="emotion" className="text-xs">Emotion</Label>
         <Select 
           value={localFilters.emotionalState || "all"} 
-          onValueChange={(val) => setLocalFilters(prev => ({ ...prev, emotionalState: val === "all" ? undefined : val }))}
+          onValueChange={(val) => setLocalFilters(prev => ({ ...prev, emotionalState: val === "all" ? undefined : val as any }))}
         >
           <SelectTrigger id="emotion" className="w-[140px] h-9">
             <SelectValue placeholder="All Emotions" />
@@ -92,7 +93,7 @@ export function FilterBar({ onFilterChange, trades }: FilterBarProps) {
           <SelectContent>
             <SelectItem value="all">All Emotions</SelectItem>
             {EMOTIONAL_STATES.map(es => (
-              <SelectItem key={es} value={es}>{es}</SelectItem>
+              <SelectItem key={es.value} value={es.value}>{es.emoji} {es.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -115,25 +116,25 @@ export function FilterBar({ onFilterChange, trades }: FilterBarProps) {
         </Select>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="fromDate" className="text-xs">From Date</Label>
+      <div className="space-y-1">
+        <Label htmlFor="dateFrom" className="text-xs">From</Label>
         <Input 
-          id="fromDate" 
+          id="dateFrom" 
           type="date" 
           className="w-[140px] h-9"
-          value={localFilters.startDate || ""}
-          onChange={(e) => setLocalFilters(prev => ({ ...prev, startDate: e.target.value || undefined }))}
+          value={localFilters.dateFrom || ""}
+          onChange={(e) => setLocalFilters(prev => ({ ...prev, dateFrom: e.target.value || undefined }))}
         />
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="toDate" className="text-xs">To Date</Label>
+      <div className="space-y-1">
+        <Label htmlFor="dateTo" className="text-xs">To</Label>
         <Input 
-          id="toDate" 
+          id="dateTo" 
           type="date" 
           className="w-[140px] h-9"
-          value={localFilters.endDate || ""}
-          onChange={(e) => setLocalFilters(prev => ({ ...prev, endDate: e.target.value || undefined }))}
+          value={localFilters.dateTo || ""}
+          onChange={(e) => setLocalFilters(prev => ({ ...prev, dateTo: e.target.value || undefined }))}
         />
       </div>
 

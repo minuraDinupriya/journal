@@ -1,6 +1,6 @@
 "use client";
 
-import { Trade } from "@/types";
+import { Trade } from "@/types/trade";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
@@ -67,7 +67,7 @@ export function RecentTrades({ trades, isLoading }: RecentTradesProps) {
                       <Link href={`/trades/${trade.id}`} className="absolute inset-0" />
                       {format(new Date(trade.entryDate), "MMM dd, yyyy")}
                     </TableCell>
-                    <TableCell className="font-medium">{trade.symbol}</TableCell>
+                    <TableCell className="font-medium">{trade.asset}</TableCell>
                     <TableCell>
                       <Badge variant={trade.direction === "LONG" ? "default" : "destructive"} className={cn(
                         trade.direction === "LONG" ? "bg-green-500/10 text-green-500 hover:bg-green-500/20" : "bg-red-500/10 text-red-500 hover:bg-red-500/20",

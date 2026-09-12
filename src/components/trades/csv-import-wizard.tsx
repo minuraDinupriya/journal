@@ -1,29 +1,33 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
 import { useCsvImport } from "@/hooks/use-csv-import"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
 export function CsvImportWizard() {
-  const { parseCsv, importTrades, parsedTrades, isImporting } = useCsvImport()
+  const { file, setFile, preview, isUploading, importResult, parseFile, importTrades, reset } = useCsvImport()
   
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [file, setFile] = useState<File | null>(null)
-  const [broker, setBroker] = useState<"mt5" | "nt8">("mt5")
-  const [importResult, setImportResult] = useState<{ imported: number, errors: number } | null>(null)
+
+  useEffect(() => {
+    if (file && step === 1) {
+      parseFile().then(() => {
+        setStep(2)
+      });
+    }
+  }, [file, parseFile, step])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0])
     }
-  }, [])
+  }, [setFile])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -34,16 +38,14 @@ export function CsvImportWizard() {
     maxFiles: 1
   })
 
-  const handleParse = async () => {
-    if (!file) return
-    const success = await parseCsv(file, broker)
-    if (success) setStep(2)
+  const handleImport = async () => {
+    await importTrades()
+    setStep(3)
   }
 
-  const handleImport = async () => {
-    const result = await importTrades()
-    setImportResult(result)
-    setStep(3)
+  const handleReset = () => {
+    reset()
+    setStep(1)
   }
 
   return (
@@ -59,19 +61,6 @@ export function CsvImportWizard() {
       <CardContent className="min-h-[300px]">
         {step === 1 && (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Broker Format</label>
-              <Select value={broker} onValueChange={(v: "mt5" | "nt8") => setBroker(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select broker format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                  <SelectItem value="nt8">NinjaTrader 8</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div
               {...getRootProps()}
               className={cn(
@@ -103,7 +92,7 @@ export function CsvImportWizard() {
             <div className="bg-muted p-4 rounded-md flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
               <div>
-                <p className="font-medium">{parsedTrades.length} trades detected</p>
+                <p className="font-medium">{preview.length} trades detected</p>
                 <p className="text-sm text-muted-foreground">Please review the first few trades to ensure they were parsed correctly.</p>
               </div>
             </div>
@@ -121,20 +110,20 @@ export function CsvImportWizard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {parsedTrades.slice(0, 10).map((trade, i) => (
+                  {preview.slice(0, 10).map((trade, i) => (
                     <TableRow key={i}>
                       <TableCell>{trade.asset}</TableCell>
                       <TableCell>{trade.direction}</TableCell>
-                      <TableCell>{new Date(trade.entryDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(trade.entryDate as string).toLocaleDateString()}</TableCell>
                       <TableCell>{trade.entryPrice}</TableCell>
                       <TableCell>{trade.exitPrice || '-'}</TableCell>
                       <TableCell>{trade.size}</TableCell>
                     </TableRow>
                   ))}
-                  {parsedTrades.length > 10 && (
+                  {preview.length > 10 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
-                        + {parsedTrades.length - 10} more trades
+                        + {preview.length - 10} more trades
                       </TableCell>
                     </TableRow>
                   )}
@@ -152,7 +141,7 @@ export function CsvImportWizard() {
             <h3 className="text-2xl font-bold">Import Successful</h3>
             <p className="text-muted-foreground max-w-sm">
               Successfully imported {importResult.imported} trades.
-              {importResult.errors > 0 && <span className="text-red-500 block mt-1"><AlertCircle className="w-4 h-4 inline mr-1"/> {importResult.errors} trades failed.</span>}
+              {importResult.failed > 0 && <span className="text-red-500 block mt-1"><AlertCircle className="w-4 h-4 inline mr-1"/> {importResult.failed} trades failed.</span>}
             </p>
           </div>
         )}
@@ -161,25 +150,22 @@ export function CsvImportWizard() {
         {step === 1 && (
           <>
             <div />
-            <Button onClick={handleParse} disabled={!file}>
-              Continue
-            </Button>
           </>
         )}
         {step === 2 && (
           <>
-            <Button variant="outline" onClick={() => setStep(1)}>
+            <Button variant="outline" onClick={handleReset}>
               Back
             </Button>
-            <Button onClick={handleImport} disabled={isImporting}>
-              {isImporting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button onClick={handleImport} disabled={isUploading}>
+              {isUploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Import Trades
             </Button>
           </>
         )}
         {step === 3 && (
           <>
-            <Button variant="outline" onClick={() => { setStep(1); setFile(null); }}>
+            <Button variant="outline" onClick={handleReset}>
               Import More
             </Button>
             <Button asChild>

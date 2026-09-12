@@ -4,7 +4,7 @@ import { Bot, Info } from "lucide-react";
 import { ChatInterface } from "@/components/ai-coach/chat-interface";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAiCoach } from "@/hooks/useAiCoach";
+import { useAiCoach } from "@/hooks/use-ai-coach";
 
 export default function AiCoachPage() {
   const { sendMessage } = useAiCoach();

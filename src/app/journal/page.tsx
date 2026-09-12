@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { JournalEditor } from "@/components/journal/journal-editor";
-import { JournalEntry, JournalFormData } from "@/types";
+import { JournalEntry, JournalFormData } from "@/types/journal";
 
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);

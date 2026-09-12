@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 export const tradeFormSchema = z.object({
-  asset: z.string().min(1, "Asset is required"),
-  assetClass: z.string().min(1, "Asset class is required"),
+  asset: z.string().optional().default(""),
+  assetClass: z.string().optional().default("FOREX"),
   direction: z.enum(['LONG', 'SHORT']),
-  entryPrice: z.number().positive("Entry price must be positive"),
-  exitPrice: z.number().positive("Exit price must be positive").nullable().optional(),
-  size: z.number().positive("Size must be positive"),
-  fees: z.number().nonnegative("Fees cannot be negative").default(0),
+  entryPrice: z.number().nonnegative().optional().default(0),
+  exitPrice: z.number().nonnegative().nullable().optional(),
+  size: z.number().nonnegative().optional().default(0),
+  fees: z.number().nonnegative().default(0),
   entryDate: z.union([z.string(), z.date()]),
   exitDate: z.union([z.string(), z.date()]).nullable().optional(),
   pnl: z.number().nullable().optional(),
@@ -16,8 +16,8 @@ export const tradeFormSchema = z.object({
   preTradeNotes: z.string().nullable().optional(),
   postTradeNotes: z.string().nullable().optional(),
   emotionalState: z.string().nullable().optional(),
-  chartImagePath: z.string().nullable().optional(),
-  tradingViewLink: z.string().url().nullable().optional(),
+  chartImages: z.array(z.string()).optional(),
+  tradingViewLink: z.union([z.literal(""), z.string().url()]).nullable().optional(),
   source: z.string().default('MANUAL'),
   tagIds: z.array(z.string()).optional(),
 });
