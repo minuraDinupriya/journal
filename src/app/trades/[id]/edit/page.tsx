@@ -37,7 +37,7 @@ export default function EditTradePage() {
   }, [id])
 
   const handleSubmit = async (data: TradeFormData) => {
-    await updateTrade(id, data)
+    await updateTrade(id, data as any)
     router.push(`/trades/${id}`)
   }
 

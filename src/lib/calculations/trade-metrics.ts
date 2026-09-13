@@ -130,3 +130,83 @@ export function calculateAllMetrics(trades: Trade[]): DashboardMetrics {
     averageHoldTime: calculateAverageHoldTime(trades),
   };
 }
+
+export interface TradeScoreData {
+  winPercent: number
+  profitFactor: number
+  avgWinLoss: number
+  recoveryFactor: number
+  maxDrawdownScore: number
+  consistency: number
+  compositeScore: number
+}
+
+export function calculateTradeScore(trades: Trade[]): TradeScoreData {
+  const closedTrades = trades.filter(t => t.pnl !== null && t.pnl !== undefined && t.exitDate);
+
+  if (closedTrades.length < 2) {
+    return {
+      winPercent: 0, profitFactor: 0, avgWinLoss: 0,
+      recoveryFactor: 0, maxDrawdownScore: 0, consistency: 0, compositeScore: 0
+    };
+  }
+
+  // 1. Win % score (direct mapping: 0-100%)
+  const rawWinRate = calculateWinRate(closedTrades);
+  const winPercent = Math.min(rawWinRate, 100);
+
+  // 2. Profit Factor score (cap at 3.0 → 100)
+  const rawPF = calculateProfitFactor(closedTrades);
+  const pfScore = Math.min((isFinite(rawPF) ? rawPF : 3) / 3 * 100, 100);
+
+  // 3. Avg Win/Loss (R:R ratio, cap at 3.0 → 100)
+  const avgW = calculateAverageWin(closedTrades);
+  const avgL = calculateAverageLoss(closedTrades);
+  const rawRR = avgL !== 0 ? Math.abs(avgW / avgL) : 0;
+  const avgWinLossScore = Math.min(rawRR / 3 * 100, 100);
+
+  // 4. Recovery Factor (total P&L / max drawdown, cap at 5.0 → 100)
+  const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const { value: maxDD } = calculateMaxDrawdown(closedTrades);
+  const rawRecovery = maxDD > 0 ? totalPnl / maxDD : (totalPnl > 0 ? 5 : 0);
+  const recoveryScore = Math.min(Math.max(rawRecovery, 0) / 5 * 100, 100);
+
+  // 5. Max Drawdown score (inverse: lower drawdown = better score)
+  // If total equity peak is known, drawdown % matters. Use percentage-based.
+  const { percentage: ddPct } = calculateMaxDrawdown(closedTrades);
+  // 0% drawdown = 100 score, 50%+ drawdown = 0 score
+  const ddScore = Math.max(100 - ddPct * 2, 0);
+
+  // 6. Consistency (lower std dev of daily P&L = better)
+  const dailyPnl = calculateDailyPnl(closedTrades);
+  const pnlValues = dailyPnl.map(d => d.pnl);
+  const mean = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
+  const variance = pnlValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / pnlValues.length;
+  const stdDev = Math.sqrt(variance);
+  // Normalize: if stdDev is 0 (perfectly consistent) = 100, scale down with higher stdDev
+  // Use mean as reference: coefficient of variation
+  const cv = mean !== 0 ? stdDev / Math.abs(mean) : stdDev;
+  // CV of 0 = 100, CV of 2+ = 0
+  const consistencyScore = Math.max(Math.min((1 - cv / 2) * 100, 100), 0);
+
+  // Composite: weighted average
+  const compositeScore = (
+    winPercent * 0.20 +
+    pfScore * 0.20 +
+    avgWinLossScore * 0.15 +
+    recoveryScore * 0.15 +
+    ddScore * 0.15 +
+    consistencyScore * 0.15
+  );
+
+  return {
+    winPercent: Math.round(winPercent * 100) / 100,
+    profitFactor: Math.round(pfScore * 100) / 100,
+    avgWinLoss: Math.round(avgWinLossScore * 100) / 100,
+    recoveryFactor: Math.round(recoveryScore * 100) / 100,
+    maxDrawdownScore: Math.round(ddScore * 100) / 100,
+    consistency: Math.round(consistencyScore * 100) / 100,
+    compositeScore: Math.round(compositeScore * 100) / 100,
+  };
+}
+

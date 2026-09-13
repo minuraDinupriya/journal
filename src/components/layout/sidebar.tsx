@@ -12,7 +12,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  CalendarDays
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -36,6 +37,7 @@ const useUiStore = create<UiState>((set) => ({
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Trades", href: "/trades", icon: LineChart },
   { name: "Import", href: "/trades/import", icon: Upload },
   { name: "Journal", href: "/journal", icon: BookOpen },

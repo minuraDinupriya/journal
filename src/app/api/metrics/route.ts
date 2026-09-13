@@ -4,7 +4,8 @@ import {
   calculateAllMetrics, 
   calculateEquityCurve, 
   calculateTiltmeter, 
-  calculateDailyPnl 
+  calculateDailyPnl,
+  calculateTradeScore
 } from "@/lib/calculations/trade-metrics";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 
@@ -17,12 +18,14 @@ export async function GET(request: Request) {
     const equityCurve = calculateEquityCurve(typedTrades);
     const tiltmeter = calculateTiltmeter(typedTrades);
     const dailyPnl = calculateDailyPnl(typedTrades);
+    const tradeScore = calculateTradeScore(typedTrades);
 
     return NextResponse.json({
       metrics,
       equityCurve,
       tiltmeter,
-      dailyPnl
+      dailyPnl,
+      tradeScore
     });
   } catch (error) {
     console.error("GET /api/metrics error:", error);

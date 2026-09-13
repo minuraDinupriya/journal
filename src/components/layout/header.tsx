@@ -19,6 +19,7 @@ export function Header() {
 
   const getPageTitle = () => {
     if (pathname === "/") return "Dashboard"
+    if (pathname.startsWith("/calendar")) return "Calendar"
     if (pathname.startsWith("/trades/import")) return "Import Trades"
     if (pathname.startsWith("/trades")) return "Trades"
     if (pathname.startsWith("/journal")) return "Journal"

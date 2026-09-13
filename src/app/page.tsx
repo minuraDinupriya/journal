@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMetrics } from "@/hooks/use-metrics";
 import { useTrades } from "@/hooks/use-trades";
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
 import { EquityCurve } from "@/components/dashboard/equity-curve";
 import { Tiltmeter } from "@/components/dashboard/tiltmeter";
+import { TradeScore } from "@/components/dashboard/trade-score";
+import { CumulativePnl } from "@/components/dashboard/cumulative-pnl";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { RecentTrades } from "@/components/dashboard/recent-trades";
 import { Button } from "@/components/ui/button";
@@ -15,7 +17,7 @@ import { TradeFilter } from "@/types/metrics";
 export default function DashboardPage() {
   const [filters, setFilters] = useState<TradeFilter>({});
   
-  const { metrics, equityCurve, tiltmeter, isLoading: metricsLoading, refreshMetrics } = useMetrics();
+  const { metrics, equityCurve, tiltmeter, tradeScore, isLoading: metricsLoading, refreshMetrics } = useMetrics();
   const { trades, isLoading: tradesLoading, fetchTrades } = useTrades();
 
   const handleRefresh = () => {
@@ -42,12 +44,23 @@ export default function DashboardPage() {
 
       <MetricsCards metrics={metrics} isLoading={metricsLoading} />
       
+      {/* Row 1: Equity Curve + Tiltmeter */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <EquityCurve data={equityCurve || []} isLoading={metricsLoading} />
         </div>
         <div className="lg:col-span-1">
           <Tiltmeter data={tiltmeter || []} isLoading={metricsLoading} />
+        </div>
+      </div>
+
+      {/* Row 2: Trade Score + Cumulative P&L */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <TradeScore data={tradeScore || null} isLoading={metricsLoading} />
+        </div>
+        <div className="lg:col-span-2">
+          <CumulativePnl data={equityCurve || []} isLoading={metricsLoading} />
         </div>
       </div>
       
