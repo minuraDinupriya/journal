@@ -180,12 +180,11 @@ export function TradeCalendar() {
         </div>
       </div>
 
-      {/* Calendar + Weekly Summaries */}
-      <div className="flex gap-4">
-        {/* Calendar Grid */}
-        <div className="flex-1">
-          <Card className="overflow-hidden border-border/50">
-            {/* Day headers */}
+      {/* Calendar + Weekly Summaries Aligned Grid */}
+      <div className="flex flex-col">
+        {/* Day Headers Row */}
+        <div className="flex gap-4">
+          <div className="flex-1 bg-card rounded-t-xl border-x border-t border-border/50">
             <div className="grid grid-cols-7 border-b border-border/50">
               {DAY_NAMES.map(day => (
                 <div key={day} className="text-center text-sm font-medium text-muted-foreground py-3 border-r border-border/30 last:border-r-0">
@@ -193,10 +192,21 @@ export function TradeCalendar() {
                 </div>
               ))}
             </div>
+          </div>
+          {/* Spacer for side column */}
+          <div className="w-36 shrink-0" />
+        </div>
 
-            {/* Weeks */}
-            {weeks.map((week, weekIdx) => (
-              <div key={weekIdx} className="grid grid-cols-7 border-b border-border/30 last:border-b-0">
+        {/* Weeks Rows */}
+        {weeks.map((week, weekIdx) => {
+          const weekSummary = weekSummaries[weekIdx];
+          
+          return (
+            <div key={weekIdx} className="flex gap-4">
+              <div className={cn(
+                "flex-1 grid grid-cols-7 bg-card border-x border-border/50",
+                weekIdx === 5 ? "border-b rounded-b-xl" : "border-b border-border/30"
+              )}>
                 {week.map((day, dayIdx) => {
                   const data = day ? dayLookup[day] : null
                   const isProfit = data && data.pnl > 0
@@ -239,27 +249,25 @@ export function TradeCalendar() {
                   )
                 })}
               </div>
-            ))}
-          </Card>
-        </div>
-
-        {/* Weekly Summaries */}
-        <div className="w-36 space-y-2 shrink-0">
-          {weekSummaries.map(week => (
-            <Card key={week.weekNumber} className="p-3 text-center border-border/50">
-              <div className="text-xs text-muted-foreground mb-1">Week {week.weekNumber}</div>
-              <div className={cn(
-                "text-lg font-bold",
-                week.pnl > 0 ? "text-emerald-400" : week.pnl < 0 ? "text-red-400" : "text-muted-foreground"
-              )}>
-                {week.pnl < 0 ? '-' : ''}{formatPnl(week.pnl)}
+              
+              {/* Weekly Summary Card (Aligned directly next to this week's row) */}
+              <div className="w-36 shrink-0 py-1 flex flex-col justify-center">
+                <Card className="p-3 text-center border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1">Week {weekSummary.weekNumber}</div>
+                  <div className={cn(
+                    "text-lg font-bold",
+                    weekSummary.pnl > 0 ? "text-emerald-400" : weekSummary.pnl < 0 ? "text-red-400" : "text-muted-foreground"
+                  )}>
+                    {weekSummary.pnl < 0 ? '-' : ''}{formatPnl(weekSummary.pnl)}
+                  </div>
+                  <div className="text-xs text-purple-400">
+                    {weekSummary.tradingDays} day{weekSummary.tradingDays !== 1 ? 's' : ''}
+                  </div>
+                </Card>
               </div>
-              <div className="text-xs text-purple-400">
-                {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
-              </div>
-            </Card>
-          ))}
-        </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
