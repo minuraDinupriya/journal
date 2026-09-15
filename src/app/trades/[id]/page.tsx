@@ -257,7 +257,6 @@ export default function TradeDetailsPage() {
                 </div>
               )}
             </div>
-            </div>
           )}
         </CardContent>
       </Card>
