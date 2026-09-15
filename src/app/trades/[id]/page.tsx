@@ -30,6 +30,7 @@ export default function TradeDetailsPage() {
   
   const [trade, setTrade] = useState<Trade | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchTrade = async () => {
@@ -47,6 +48,34 @@ export default function TradeDetailsPage() {
     }
     if (id) fetchTrade()
   }, [id])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      
+      let chartImages: string[] = []
+      if (trade?.chartImagePath) {
+        try {
+          chartImages = trade.chartImagePath.startsWith('[') 
+            ? JSON.parse(trade.chartImagePath) 
+            : [trade.chartImagePath]
+        } catch {
+          chartImages = [trade.chartImagePath]
+        }
+      }
+      
+      if (e.key === 'Escape') {
+        setLightboxIndex(null)
+      } else if (e.key === 'ArrowLeft' && chartImages.length > 1) {
+        setLightboxIndex(prev => prev !== null ? (prev === 0 ? chartImages.length - 1 : prev - 1) : null)
+      } else if (e.key === 'ArrowRight' && chartImages.length > 1) {
+        setLightboxIndex(prev => prev !== null ? (prev === chartImages.length - 1 ? 0 : prev + 1) : null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxIndex, trade])
 
   if (isLoading) return <div className="container mx-auto p-6">Loading...</div>
   if (!trade) return <div className="container mx-auto p-6">Trade not found.</div>
@@ -206,20 +235,92 @@ export default function TradeDetailsPage() {
                   <h3 className="text-lg font-semibold mb-2">Attached Images ({chartImages.length})</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {chartImages.map((imgUrl, idx) => (
-                      <div key={idx} className="rounded-lg overflow-hidden border">
+                      <div 
+                        key={idx} 
+                        className="rounded-lg overflow-hidden border cursor-pointer group relative"
+                        onClick={() => setLightboxIndex(idx)}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <a href={imgUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={imgUrl} alt={`Trade Chart ${idx + 1}`} className="w-full h-auto object-cover hover:opacity-90 transition-opacity" />
-                        </a>
+                        <img 
+                          src={imgUrl} 
+                          alt={`Trade Chart ${idx + 1}`} 
+                          className="w-full h-auto object-cover group-hover:opacity-90 transition-opacity" 
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                          <div className="bg-black/50 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity transform scale-90 group-hover:scale-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Lightbox Overlay */}
+      {lightboxIndex !== null && chartImages.length > 0 && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div 
+            className="relative max-w-7xl max-h-screen w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              className="absolute top-4 right-4 text-white/70 hover:text-white z-50 bg-black/50 p-2 rounded-full"
+              onClick={() => setLightboxIndex(null)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            
+            {/* Previous Button */}
+            {chartImages.length > 1 && (
+              <button 
+                className="absolute left-4 text-white/70 hover:text-white z-50 bg-black/50 p-2 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => prev !== null ? (prev === 0 ? chartImages.length - 1 : prev - 1) : null)
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+            )}
+
+            {/* Image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={chartImages[lightboxIndex]} 
+              alt={`Trade Chart ${lightboxIndex + 1}`} 
+              className="max-w-full max-h-[90vh] object-contain rounded-md"
+            />
+
+            {/* Next Button */}
+            {chartImages.length > 1 && (
+              <button 
+                className="absolute right-4 text-white/70 hover:text-white z-50 bg-black/50 p-2 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => prev !== null ? (prev === chartImages.length - 1 ? 0 : prev + 1) : null)
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            )}
+            
+            {/* Image Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+              {lightboxIndex + 1} / {chartImages.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
