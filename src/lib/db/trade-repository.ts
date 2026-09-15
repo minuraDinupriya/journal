@@ -20,6 +20,7 @@ export type TradeFormData = {
   strategy?: string | null;
   setup?: string | null;
   preTradeNotes?: string | null;
+  duringTradeNotes?: string | null;
   postTradeNotes?: string | null;
   emotionalState?: string | null;
   chartImages?: string[];

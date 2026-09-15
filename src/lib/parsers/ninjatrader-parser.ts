@@ -78,6 +78,7 @@ export function parseNinjaTraderCsv(csvContent: string): CsvParseResult<TradeFor
           strategy: row['Strategy'] || null,
           setup: instrument !== asset ? instrument : null,
           preTradeNotes: row['Trade #'] ? `Trade #${row['Trade #']}` : null,
+          duringTradeNotes: null,
           postTradeNotes: null,
           emotionalState: null,
           chartImagePath: null,

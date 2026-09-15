@@ -225,6 +225,14 @@ export default function TradeDetailsPage() {
                 </p>
               </div>
             )}
+            {trade.duringTradeNotes && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2">During-Trade Notes</h3>
+                <p className="whitespace-pre-wrap text-muted-foreground bg-muted p-4 rounded-md">
+                  {trade.duringTradeNotes}
+                </p>
+              </div>
+            )}
             {trade.postTradeNotes && (
               <div>
                 <h3 className="text-lg font-semibold mb-2">Post-Trade Notes</h3>

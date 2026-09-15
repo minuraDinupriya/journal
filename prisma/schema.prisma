@@ -38,6 +38,7 @@ model Trade {
   strategy        String?
   setup           String?
   preTradeNotes   String?
+  duringTradeNotes String?
   postTradeNotes  String?
   emotionalState  String?
   chartImagePath  String?

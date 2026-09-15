@@ -107,6 +107,7 @@ export function parseMt5Csv(csvContent: string): CsvParseResult<TradeFormData> {
           strategy: null,
           setup: positionStr ? `Ticket: ${positionStr}` : null,
           preTradeNotes: null,
+          duringTradeNotes: null,
           postTradeNotes: null,
           emotionalState: null,
           chartImagePath: null,

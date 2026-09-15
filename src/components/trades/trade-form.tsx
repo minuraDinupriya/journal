@@ -45,6 +45,7 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
       strategy: initialData?.strategy || "",
       setup: initialData?.setup || "",
       preTradeNotes: initialData?.preTradeNotes || "",
+      duringTradeNotes: initialData?.duringTradeNotes || "",
       postTradeNotes: initialData?.postTradeNotes || "",
       emotionalState: initialData?.emotionalState || "",
       tradingViewLink: initialData?.tradingViewLink || "",
@@ -259,6 +260,11 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="preTradeNotes">Pre-Trade Notes</Label>
           <Textarea id="preTradeNotes" {...register("preTradeNotes")} placeholder="What was your thesis?" rows={3} />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="duringTradeNotes">During-Trade Notes</Label>
+          <Textarea id="duringTradeNotes" {...register("duringTradeNotes")} placeholder="What are you thinking while the trade is open?" rows={3} />
         </div>
 
         <div className="space-y-2 md:col-span-2">

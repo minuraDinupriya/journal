@@ -27,6 +27,7 @@ export interface Trade {
   strategy: string | null;
   setup: string | null;
   preTradeNotes: string | null;
+  duringTradeNotes: string | null;
   postTradeNotes: string | null;
   emotionalState: EmotionalState | null;
   chartImagePath: string | null;

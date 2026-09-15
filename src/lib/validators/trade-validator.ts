@@ -16,6 +16,7 @@ export const tradeFormSchema = z.object({
   strategy: z.string().nullable().optional(),
   setup: z.string().nullable().optional(),
   preTradeNotes: z.string().nullable().optional(),
+  duringTradeNotes: z.string().nullable().optional(),
   postTradeNotes: z.string().nullable().optional(),
   emotionalState: z.string().nullable().optional(),
   chartImages: z.array(z.string()).optional(),
