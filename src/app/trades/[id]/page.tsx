@@ -155,15 +155,25 @@ export default function TradeDetailsPage() {
                 {trade.exitDate && ` - ${format(new Date(trade.exitDate), "PPP p")}`}
               </div>
             </div>
-            <div className={`text-right mt-4 md:mt-0 ${isProfit ? 'text-green-600' : isLoss ? 'text-red-600' : ''}`}>
-              <div className="text-sm font-medium text-muted-foreground">Net P&L</div>
-              <div className="text-4xl font-bold">
-                {trade.pnl !== null && trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : "—"}
+            <div className="flex items-center gap-6 mt-4 md:mt-0">
+              {trade.realizedRr !== null && trade.realizedRr !== undefined && (
+                <div className="text-right">
+                  <div className="text-sm font-medium text-muted-foreground">Realized R:R</div>
+                  <div className={`text-4xl font-bold ${trade.realizedRr > 0 ? 'text-emerald-500' : trade.realizedRr < 0 ? 'text-rose-500' : ''}`}>
+                    {trade.realizedRr > 0 ? '+' : ''}{trade.realizedRr.toFixed(2)}R
+                  </div>
+                </div>
+              )}
+              <div className={`text-right ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : ''}`}>
+                <div className="text-sm font-medium text-muted-foreground">Net P&L</div>
+                <div className="text-4xl font-bold">
+                  {trade.pnl !== null && trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : "—"}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 mb-8">
             <div>
               <div className="text-sm text-muted-foreground mb-1">Entry Price</div>
               <div className="font-semibold">{trade.entryPrice}</div>
@@ -171,6 +181,16 @@ export default function TradeDetailsPage() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Exit Price</div>
               <div className="font-semibold">{trade.exitPrice || "—"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">Stop Loss (SL)</div>
+              <div className="font-semibold">{trade.stopLoss || "—"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">Risk per Unit</div>
+              <div className="font-semibold text-orange-500/90">
+                {trade.stopLoss ? Math.abs(trade.entryPrice - trade.stopLoss).toFixed(2) : "—"}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Size</div>

@@ -99,6 +99,8 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
             <TableHead>Direction</TableHead>
             <TableHead>Entry</TableHead>
             <TableHead>Exit</TableHead>
+            <TableHead>SL</TableHead>
+            <TableHead className="text-right">R:R</TableHead>
             <TableHead className="cursor-pointer text-right" onClick={() => handleSort('pnl')}>
               P&L <ArrowUpDown className="w-3 h-3 inline-block ml-1" />
             </TableHead>
@@ -126,7 +128,17 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
                 </TableCell>
                 <TableCell>{trade.entryPrice}</TableCell>
                 <TableCell>{trade.exitPrice || "-"}</TableCell>
-                <TableCell className={`text-right font-medium ${isProfit ? 'text-green-600' : isLoss ? 'text-red-600' : ''}`}>
+                <TableCell className="text-muted-foreground">{trade.stopLoss || "-"}</TableCell>
+                <TableCell className="text-right">
+                  {trade.realizedRr !== null && trade.realizedRr !== undefined ? (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${trade.realizedRr > 0 ? 'text-emerald-500 bg-emerald-500/10' : trade.realizedRr < 0 ? 'text-rose-500 bg-rose-500/10' : 'text-muted-foreground bg-muted'}`}>
+                      {trade.realizedRr > 0 ? '+' : ''}{trade.realizedRr.toFixed(2)}R
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </TableCell>
+                <TableCell className={`text-right font-medium ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : ''}`}>
                   {trade.pnl !== null && trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : "-"}
                 </TableCell>
                 <TableCell>{trade.strategy || "-"}</TableCell>

@@ -6,6 +6,8 @@ export const tradeFormSchema = z.object({
   direction: z.enum(['LONG', 'SHORT']),
   entryPrice: z.number().nonnegative().optional().default(0),
   exitPrice: z.number().nonnegative().nullable().optional(),
+  stopLoss: z.number().nonnegative().nullable().optional(),
+  realizedRr: z.number().nullable().optional(),
   size: z.number().nonnegative().optional().default(0),
   fees: z.number().nonnegative().default(0),
   entryDate: z.union([z.string(), z.date()]),

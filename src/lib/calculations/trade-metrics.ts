@@ -122,9 +122,16 @@ export function calculateAllMetrics(trades: Trade[]): DashboardMetrics {
     averageWin: calculateAverageWin(trades),
     averageLoss: calculateAverageLoss(trades),
     maxDrawdown: calculateMaxDrawdown(trades).value,
-    averageRrr: calculateAverageWin(trades) !== 0 && calculateAverageLoss(trades) !== 0
-      ? Math.abs(calculateAverageWin(trades) / calculateAverageLoss(trades))
-      : 0,
+    averageRrr: (() => {
+      const tradesWithRr = trades.filter(t => t.realizedRr !== null && t.realizedRr !== undefined);
+      if (tradesWithRr.length > 0) {
+        const sum = tradesWithRr.reduce((acc, t) => acc + (t.realizedRr || 0), 0);
+        return Number((sum / tradesWithRr.length).toFixed(2));
+      }
+      const avgWin = calculateAverageWin(trades);
+      const avgLoss = Math.abs(calculateAverageLoss(trades));
+      return avgLoss !== 0 ? Number((avgWin / avgLoss).toFixed(2)) : 0;
+    })(),
     bestTrade: pnlValues.length > 0 ? Math.max(...pnlValues) : 0,
     worstTrade: pnlValues.length > 0 ? Math.min(...pnlValues) : 0,
     averageHoldTime: calculateAverageHoldTime(trades),

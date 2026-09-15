@@ -28,6 +28,8 @@ model Trade {
   direction       String   // LONG or SHORT
   entryPrice      Float
   exitPrice       Float?
+  stopLoss        Float?
+  realizedRr      Float?
   size            Float
   fees            Float    @default(0)
   entryDate       DateTime

@@ -10,6 +10,8 @@ export type TradeFormData = {
   direction: string;
   entryPrice: number;
   exitPrice?: number | null;
+  stopLoss?: number | null;
+  realizedRr?: number | null;
   size: number;
   fees?: number;
   entryDate: string | Date;

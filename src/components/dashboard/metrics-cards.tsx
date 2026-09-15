@@ -9,7 +9,8 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
-  TrendingDown
+  TrendingDown,
+  Scale
 } from "lucide-react";
 
 interface MetricsCardsProps {
@@ -67,10 +68,18 @@ export function MetricsCards({ metrics, isLoading }: MetricsCardsProps) {
       bgColor: "bg-orange-500/10",
       valueColor: "text-red-500",
     },
+    {
+      title: "Avg Realized R:R",
+      value: metrics ? `${metrics.averageRrr > 0 ? '+' : ''}${metrics.averageRrr.toFixed(2)}R` : "—",
+      icon: Scale,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      valueColor: metrics && metrics.averageRrr > 0 ? "text-emerald-500" : metrics && metrics.averageRrr < 0 ? "text-rose-500" : "",
+    },
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-7">
       {cards.map((card, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

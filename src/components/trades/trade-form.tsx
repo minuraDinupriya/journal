@@ -36,6 +36,8 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
       direction: initialData?.direction || "LONG",
       entryPrice: initialData?.entryPrice || 0,
       exitPrice: initialData?.exitPrice || undefined,
+      stopLoss: initialData?.stopLoss ?? undefined,
+      realizedRr: initialData?.realizedRr ?? undefined,
       size: initialData?.size || 0,
       fees: initialData?.fees || 0,
       entryDate: initialData?.entryDate ? new Date(initialData.entryDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -52,11 +54,13 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
     }
   })
 
-  const [calculatedPnl, setCalculatedPnl] = useState<number | null>(null)
+  const [calculatedPnl, setCalculatedPnl] = useState<number | null>(initialData?.pnl ?? null)
+  const [calculatedRr, setCalculatedRr] = useState<number | null>(initialData?.realizedRr ?? null)
 
   const direction = watch("direction")
   const entryPrice = watch("entryPrice")
   const exitPrice = watch("exitPrice")
+  const stopLoss = watch("stopLoss")
   const size = watch("size")
   const fees = watch("fees")
   const emotionalState = watch("emotionalState")
@@ -98,7 +102,32 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
       setCalculatedPnl(null)
       setValue("pnl", null)
     }
-  }, [entryPrice, exitPrice, size, direction, fees, setValue])
+
+    // Realized R:R Calculation
+    if (entryPrice > 0 && exitPrice !== undefined && exitPrice !== null && exitPrice > 0 && stopLoss !== undefined && stopLoss !== null && stopLoss > 0) {
+      let risk = 0
+      let reward = 0
+      if (direction === "LONG") {
+        risk = entryPrice - stopLoss
+        reward = exitPrice - entryPrice
+      } else {
+        risk = stopLoss - entryPrice
+        reward = entryPrice - exitPrice
+      }
+
+      if (risk > 0) {
+        const rr = Number((reward / risk).toFixed(2))
+        setCalculatedRr(rr)
+        setValue("realizedRr", rr)
+      } else {
+        setCalculatedRr(null)
+        setValue("realizedRr", null)
+      }
+    } else {
+      setCalculatedRr(null)
+      setValue("realizedRr", null)
+    }
+  }, [entryPrice, exitPrice, stopLoss, size, direction, fees, setValue])
 
   const onError = (formErrors: any) => {
     toast.error("Please fill in all required fields correctly.");
@@ -158,13 +187,33 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="stopLoss">Stop Loss (SL)</Label>
+          <Input 
+            id="stopLoss" 
+            type="number" 
+            step="any" 
+            placeholder="e.g. 29300.00" 
+            {...register("stopLoss", { setValueAs: v => v === "" || v === undefined || v === null ? undefined : parseFloat(v) })} 
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Realized Risk/Reward (R:R)</Label>
+          <div className={`p-2 border rounded-md font-semibold ${calculatedRr !== null ? (calculatedRr > 0 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30' : calculatedRr < 0 ? 'text-rose-500 bg-rose-500/10 border-rose-500/30' : 'text-muted-foreground bg-muted') : 'text-muted-foreground bg-muted'}`}>
+            {calculatedRr !== null 
+              ? `${calculatedRr > 0 ? '+' : ''}${calculatedRr.toFixed(2)}R (1 : ${Math.abs(calculatedRr).toFixed(2)})` 
+              : "Enter SL & Exit to calculate R:R"}
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="fees">Fees</Label>
           <Input id="fees" type="number" step="any" {...register("fees", { setValueAs: v => v === "" ? 0 : parseFloat(v) })} />
         </div>
 
         <div className="space-y-2">
           <Label>Estimated P&L</Label>
-          <div className={`p-2 border rounded-md font-semibold ${calculatedPnl !== null ? (calculatedPnl > 0 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50') : 'text-muted-foreground bg-muted'}`}>
+          <div className={`p-2 border rounded-md font-semibold ${calculatedPnl !== null ? (calculatedPnl > 0 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30' : calculatedPnl < 0 ? 'text-rose-500 bg-rose-500/10 border-rose-500/30' : 'text-muted-foreground bg-muted') : 'text-muted-foreground bg-muted'}`}>
             {calculatedPnl !== null ? `$${calculatedPnl.toFixed(2)}` : "Awaiting entry/exit/size"}
           </div>
         </div>
