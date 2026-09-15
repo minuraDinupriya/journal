@@ -72,10 +72,12 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
       }
       pnl -= (fees || 0)
       setCalculatedPnl(pnl)
+      setValue("pnl", pnl)
     } else {
       setCalculatedPnl(null)
+      setValue("pnl", null)
     }
-  }, [entryPrice, exitPrice, size, direction, fees])
+  }, [entryPrice, exitPrice, size, direction, fees, setValue])
 
   const onError = (formErrors: any) => {
     toast.error("Please fill in all required fields correctly.");
