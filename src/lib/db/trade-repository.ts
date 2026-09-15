@@ -82,7 +82,7 @@ export async function getTrades(filters?: TradeFilter & { userId: string }) {
 
     return await prisma.trade.findMany({
       where,
-      orderBy: { entryDate: 'desc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         tags: { include: { tag: true } }
       }

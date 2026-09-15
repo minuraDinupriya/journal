@@ -140,7 +140,7 @@ export default function JournalPage() {
                         {getMoodEmoji(entry.mood)}
                       </div>
                       <div>
-                        <div className="font-semibold">{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        <div className="font-semibold">{new Date(entry.createdAt).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                         <div className="text-muted-foreground text-sm line-clamp-1 mt-1">
                           {entry.content}
                         </div>

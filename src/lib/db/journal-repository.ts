@@ -34,7 +34,7 @@ export async function getJournalEntries(userId: string, dateFrom?: string | Date
 
     return await prisma.journalEntry.findMany({
       where,
-      orderBy: { date: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
   } catch (error) {
     console.error('Error fetching journal entries:', error);

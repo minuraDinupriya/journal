@@ -55,7 +55,7 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
   const sortedTrades = [...trades].sort((a, b) => {
     let result = 0
     if (sortField === 'date') {
-      result = new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
+      result = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     } else if (sortField === 'asset') {
       result = a.asset.localeCompare(b.asset)
     } else if (sortField === 'pnl') {
@@ -116,7 +116,7 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
             return (
               <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/trades/${trade.id}`)}>
                 <TableCell className="whitespace-nowrap">
-                  {format(new Date(trade.entryDate), "MMM dd, yyyy")}
+                  {format(new Date(trade.createdAt), "MMM dd, yyyy h:mm a")}
                 </TableCell>
                 <TableCell className="font-medium">{trade.asset}</TableCell>
                 <TableCell>
