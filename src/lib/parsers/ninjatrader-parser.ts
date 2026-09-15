@@ -82,6 +82,8 @@ export function parseNinjaTraderCsv(csvContent: string): CsvParseResult<TradeFor
           emotionalState: null,
           chartImagePath: null,
           tradingViewLink: null,
+          stopLoss: null,
+          realizedRr: null,
         };
 
         data.push(tradeData);

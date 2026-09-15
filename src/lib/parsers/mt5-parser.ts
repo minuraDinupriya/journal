@@ -111,6 +111,8 @@ export function parseMt5Csv(csvContent: string): CsvParseResult<TradeFormData> {
           emotionalState: null,
           chartImagePath: null,
           tradingViewLink: null,
+          stopLoss: null,
+          realizedRr: null,
         };
 
         data.push(tradeData);
