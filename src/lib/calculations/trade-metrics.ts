@@ -1,8 +1,18 @@
 import { Trade } from '@/types/trade';
 import { DashboardMetrics, EquityPoint, TiltmeterData } from '@/types/metrics';
 
+// Helper to get a date for sorting/grouping even if exitDate is null
+function getTradeDate(trade: Trade): Date {
+  return trade.exitDate ? new Date(trade.exitDate) : trade.entryDate ? new Date(trade.entryDate) : new Date(trade.createdAt);
+}
+
+// A trade is considered closed if it has a non-null PnL
+function isTradeClosed(trade: Trade): boolean {
+  return trade.pnl !== undefined && trade.pnl !== null;
+}
+
 export function calculateWinRate(trades: Trade[]): number {
-  const closedWithPnl = trades.filter(t => t.pnl !== undefined && t.pnl !== null && t.exitDate);
+  const closedWithPnl = trades.filter(isTradeClosed);
   if (closedWithPnl.length === 0) return 0;
   
   const wins = closedWithPnl.filter(t => (t.pnl || 0) > 0).length;
@@ -10,7 +20,7 @@ export function calculateWinRate(trades: Trade[]): number {
 }
 
 export function calculateProfitFactor(trades: Trade[]): number {
-  const closedWithPnl = trades.filter(t => t.pnl !== undefined && t.pnl !== null);
+  const closedWithPnl = trades.filter(isTradeClosed);
   const grossProfit = closedWithPnl.filter(t => (t.pnl || 0) > 0).reduce((sum, t) => sum + (t.pnl || 0), 0);
   const grossLoss = Math.abs(closedWithPnl.filter(t => (t.pnl || 0) < 0).reduce((sum, t) => sum + (t.pnl || 0), 0));
   
@@ -19,19 +29,19 @@ export function calculateProfitFactor(trades: Trade[]): number {
 }
 
 export function calculateAverageWin(trades: Trade[]): number {
-  const wins = trades.filter(t => (t.pnl || 0) > 0);
+  const wins = trades.filter(t => isTradeClosed(t) && (t.pnl || 0) > 0);
   if (wins.length === 0) return 0;
   return wins.reduce((sum, t) => sum + (t.pnl || 0), 0) / wins.length;
 }
 
 export function calculateAverageLoss(trades: Trade[]): number {
-  const losses = trades.filter(t => (t.pnl || 0) < 0);
+  const losses = trades.filter(t => isTradeClosed(t) && (t.pnl || 0) < 0);
   if (losses.length === 0) return 0;
   return losses.reduce((sum, t) => sum + (t.pnl || 0), 0) / losses.length;
 }
 
 export function calculateMaxDrawdown(trades: Trade[]): { value: number, percentage: number } {
-  const sorted = [...trades].filter(t => t.exitDate).sort((a, b) => new Date(a.exitDate!).getTime() - new Date(b.exitDate!).getTime());
+  const sorted = [...trades].filter(isTradeClosed).sort((a, b) => getTradeDate(a).getTime() - getTradeDate(b).getTime());
   let peak = 0;
   let maxDrawdownValue = 0;
   let cumulativePnl = 0;
@@ -52,21 +62,22 @@ export function calculateMaxDrawdown(trades: Trade[]): { value: number, percenta
 }
 
 export function calculateEquityCurve(trades: Trade[]): EquityPoint[] {
-  const sorted = [...trades].filter(t => t.exitDate).sort((a, b) => new Date(a.exitDate!).getTime() - new Date(b.exitDate!).getTime());
+  const sorted = [...trades].filter(isTradeClosed).sort((a, b) => getTradeDate(a).getTime() - getTradeDate(b).getTime());
   let cumulativePnl = 0;
   
   return sorted.map(t => {
     cumulativePnl += t.pnl || 0;
     return {
-      date: new Date(t.exitDate!).toISOString(),
+      date: getTradeDate(t).toISOString(),
       equity: cumulativePnl,
     };
   });
 }
 
 export function calculateTiltmeter(trades: Trade[]): TiltmeterData[] {
+  const closedWithPnl = trades.filter(isTradeClosed);
   const groups: Record<string, Trade[]> = {};
-  for (const trade of trades) {
+  for (const trade of closedWithPnl) {
     const state = trade.emotionalState || 'NEUTRAL';
     if (!groups[state]) groups[state] = [];
     groups[state].push(trade);
@@ -87,7 +98,7 @@ export function calculateTiltmeter(trades: Trade[]): TiltmeterData[] {
 }
 
 export function calculateAverageHoldTime(trades: Trade[]): number {
-  const closed = trades.filter(t => t.exitDate && t.entryDate);
+  const closed = trades.filter(t => isTradeClosed(t) && t.exitDate && t.entryDate);
   if (closed.length === 0) return 0;
   
   const totalMinutes = closed.reduce((sum, t) => {
@@ -100,9 +111,9 @@ export function calculateAverageHoldTime(trades: Trade[]): number {
 
 export function calculateDailyPnl(trades: Trade[]): { date: string, pnl: number }[] {
   const daily: Record<string, number> = {};
-  for (const trade of trades) {
-    if (!trade.exitDate) continue;
-    const dateStr = new Date(trade.exitDate).toISOString().split('T')[0];
+  const closedTrades = trades.filter(isTradeClosed);
+  for (const trade of closedTrades) {
+    const dateStr = getTradeDate(trade).toISOString().split('T')[0];
     daily[dateStr] = (daily[dateStr] || 0) + (trade.pnl || 0);
   }
   
@@ -110,12 +121,12 @@ export function calculateDailyPnl(trades: Trade[]): { date: string, pnl: number 
 }
 
 export function calculateAllMetrics(trades: Trade[]): DashboardMetrics {
-  const closedTrades = trades.filter(t => t.exitDate !== undefined && t.exitDate !== null);
+  const closedTrades = trades.filter(isTradeClosed);
   const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
   const pnlValues = closedTrades.map(t => t.pnl || 0);
   
   return {
-    totalTrades: trades.length,
+    totalTrades: trades.length, // Include open trades in total count
     totalPnl,
     winRate: calculateWinRate(trades),
     profitFactor: calculateProfitFactor(trades),
@@ -123,7 +134,7 @@ export function calculateAllMetrics(trades: Trade[]): DashboardMetrics {
     averageLoss: calculateAverageLoss(trades),
     maxDrawdown: calculateMaxDrawdown(trades).value,
     averageRrr: (() => {
-      const tradesWithRr = trades.filter(t => t.realizedRr !== null && t.realizedRr !== undefined);
+      const tradesWithRr = closedTrades.filter(t => t.realizedRr !== null && t.realizedRr !== undefined);
       if (tradesWithRr.length > 0) {
         const sum = tradesWithRr.reduce((acc, t) => acc + (t.realizedRr || 0), 0);
         return Number((sum / tradesWithRr.length).toFixed(2));
@@ -149,7 +160,7 @@ export interface TradeScoreData {
 }
 
 export function calculateTradeScore(trades: Trade[]): TradeScoreData {
-  const closedTrades = trades.filter(t => t.pnl !== null && t.pnl !== undefined && t.exitDate);
+  const closedTrades = trades.filter(isTradeClosed);
 
   if (closedTrades.length < 2) {
     return {
@@ -187,9 +198,10 @@ export function calculateTradeScore(trades: Trade[]): TradeScoreData {
   // 6. Consistency (lower std dev of daily P&L = better)
   const dailyPnl = calculateDailyPnl(closedTrades);
   const pnlValues = dailyPnl.map(d => d.pnl);
-  const mean = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
-  const variance = pnlValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / pnlValues.length;
+  const mean = pnlValues.length > 0 ? pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length : 0;
+  const variance = pnlValues.length > 0 ? pnlValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / pnlValues.length : 0;
   const stdDev = Math.sqrt(variance);
+  
   // Normalize: if stdDev is 0 (perfectly consistent) = 100, scale down with higher stdDev
   // Use mean as reference: coefficient of variation
   const cv = mean !== 0 ? stdDev / Math.abs(mean) : stdDev;
@@ -216,4 +228,5 @@ export function calculateTradeScore(trades: Trade[]): TradeScoreData {
     compositeScore: Math.round(compositeScore * 100) / 100,
   };
 }
+
 
