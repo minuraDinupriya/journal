@@ -43,6 +43,7 @@ model Trade {
   source          String   @default("MANUAL")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
   tags            TagOnTrade[]
 
   @@index([userId])
@@ -75,6 +76,7 @@ model JournalEntry {
   mood      Int      @default(3)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   @@index([userId])
   @@index([date])

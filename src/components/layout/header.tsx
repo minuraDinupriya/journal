@@ -25,6 +25,7 @@ export function Header() {
     if (pathname.startsWith("/journal")) return "Journal"
     if (pathname.startsWith("/ai-coach")) return "AI Coach"
     if (pathname.startsWith("/settings")) return "Settings"
+    if (pathname.startsWith("/trash")) return "Trash"
     return "TradeJournal"
   }
 

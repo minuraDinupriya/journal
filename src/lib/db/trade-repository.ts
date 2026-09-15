@@ -64,7 +64,7 @@ export async function createTrade(data: TradeFormData & { userId: string }) {
 
 export async function getTrades(filters?: TradeFilter & { userId: string }) {
   try {
-    const where: Prisma.TradeWhereInput = {};
+    const where: Prisma.TradeWhereInput = { deletedAt: null };
     if (filters) {
       if (filters.userId) where.userId = filters.userId;
       if (filters.assetClass) where.assetClass = filters.assetClass.toUpperCase();
@@ -95,8 +95,8 @@ export async function getTrades(filters?: TradeFilter & { userId: string }) {
 
 export async function getTradeById(id: string) {
   try {
-    return await prisma.trade.findUnique({
-      where: { id },
+    return await prisma.trade.findFirst({
+      where: { id, deletedAt: null },
       include: {
         tags: { include: { tag: true } }
       }
@@ -142,12 +142,48 @@ export async function updateTrade(id: string, data: Partial<TradeFormData>) {
 
 export async function deleteTrade(id: string): Promise<void> {
   try {
-    await prisma.trade.delete({
-      where: { id }
+    await prisma.trade.update({
+      where: { id },
+      data: { deletedAt: new Date() }
     });
   } catch (error) {
     console.error('Error deleting trade:', error);
     throw new Error('Failed to delete trade.');
+  }
+}
+
+export async function restoreTrade(id: string): Promise<void> {
+  try {
+    await prisma.trade.update({
+      where: { id },
+      data: { deletedAt: null }
+    });
+  } catch (error) {
+    console.error('Error restoring trade:', error);
+    throw new Error('Failed to restore trade.');
+  }
+}
+
+export async function hardDeleteTrade(id: string): Promise<void> {
+  try {
+    await prisma.trade.delete({
+      where: { id }
+    });
+  } catch (error) {
+    console.error('Error hard deleting trade:', error);
+    throw new Error('Failed to hard delete trade.');
+  }
+}
+
+export async function getDeletedTrades(userId: string) {
+  try {
+    return await prisma.trade.findMany({
+      where: { userId, deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' }
+    });
+  } catch (error) {
+    console.error('Error fetching deleted trades:', error);
+    throw new Error('Failed to fetch deleted trades.');
   }
 }
 

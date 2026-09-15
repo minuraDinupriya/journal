@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  CalendarDays
+  CalendarDays,
+  Trash2
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -43,6 +44,7 @@ const navItems = [
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "AI Coach", href: "/ai-coach", icon: Bot },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Trash", href: "/trash", icon: Trash2 },
 ]
 
 export function Sidebar() {

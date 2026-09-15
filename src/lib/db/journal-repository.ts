@@ -24,7 +24,7 @@ export async function createJournalEntry(data: JournalFormData & { userId: strin
 
 export async function getJournalEntries(userId: string, dateFrom?: string | Date, dateTo?: string | Date) {
   try {
-    const where: any = { userId };
+    const where: any = { userId, deletedAt: null };
     
     if (dateFrom || dateTo) {
       where.date = {};
@@ -44,8 +44,8 @@ export async function getJournalEntries(userId: string, dateFrom?: string | Date
 
 export async function getJournalEntryById(id: string) {
   try {
-    return await prisma.journalEntry.findUnique({
-      where: { id }
+    return await prisma.journalEntry.findFirst({
+      where: { id, deletedAt: null }
     });
   } catch (error) {
     console.error('Error fetching journal entry by ID:', error);
@@ -70,11 +70,47 @@ export async function updateJournalEntry(id: string, data: Partial<JournalFormDa
 
 export async function deleteJournalEntry(id: string): Promise<void> {
   try {
-    await prisma.journalEntry.delete({
-      where: { id }
+    await prisma.journalEntry.update({
+      where: { id },
+      data: { deletedAt: new Date() }
     });
   } catch (error) {
     console.error('Error deleting journal entry:', error);
     throw new Error('Failed to delete journal entry.');
+  }
+}
+
+export async function restoreJournalEntry(id: string): Promise<void> {
+  try {
+    await prisma.journalEntry.update({
+      where: { id },
+      data: { deletedAt: null }
+    });
+  } catch (error) {
+    console.error('Error restoring journal entry:', error);
+    throw new Error('Failed to restore journal entry.');
+  }
+}
+
+export async function hardDeleteJournalEntry(id: string): Promise<void> {
+  try {
+    await prisma.journalEntry.delete({
+      where: { id }
+    });
+  } catch (error) {
+    console.error('Error hard deleting journal entry:', error);
+    throw new Error('Failed to hard delete journal entry.');
+  }
+}
+
+export async function getDeletedJournalEntries(userId: string) {
+  try {
+    return await prisma.journalEntry.findMany({
+      where: { userId, deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' }
+    });
+  } catch (error) {
+    console.error('Error fetching deleted journal entries:', error);
+    throw new Error('Failed to fetch deleted journal entries.');
   }
 }
