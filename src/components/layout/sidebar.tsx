@@ -14,7 +14,8 @@ import {
   ChevronRight,
   TrendingUp,
   CalendarDays,
-  Trash2
+  Trash2,
+  Lock
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -44,6 +45,7 @@ const navItems = [
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "AI Coach", href: "/ai-coach", icon: Bot },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Vault", href: "/vault", icon: Lock },
   { name: "Trash", href: "/trash", icon: Trash2 },
 ]
 
