@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -22,12 +22,13 @@ interface TradeFormProps {
   mode: 'create' | 'edit'
   initialData?: Trade
   onSubmit: (data: TradeFormData) => Promise<void>
+  onAutoSave?: (data: TradeFormData) => void
   isSubmitting: boolean
 }
 
-export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFormProps) {
+export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmitting }: TradeFormProps) {
   const router = useRouter()
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TradeFormData>({
+  const { register, handleSubmit, setValue, watch, getValues, formState: { errors, isDirty } } = useForm<TradeFormData>({
     resolver: zodResolver(tradeFormSchema) as any,
     defaultValues: {
       asset: initialData?.asset || "",
@@ -61,6 +62,26 @@ export function TradeForm({ mode, initialData, onSubmit, isSubmitting }: TradeFo
   const emotionalState = watch("emotionalState")
   const assetClass = watch("assetClass")
   const chartImages = watch("chartImages")
+
+  const valuesRef = useRef(getValues())
+  const isDirtyRef = useRef(isDirty)
+  const isSubmittingRef = useRef(isSubmitting)
+  const modeRef = useRef(mode)
+
+  useEffect(() => {
+    valuesRef.current = getValues()
+    isDirtyRef.current = isDirty
+    isSubmittingRef.current = isSubmitting
+  }, [watch(), isDirty, isSubmitting, getValues])
+
+  useEffect(() => {
+    return () => {
+      // Auto-save on unmount if dirty, in edit mode, and not already submitting normally
+      if (modeRef.current === 'edit' && isDirtyRef.current && !isSubmittingRef.current && onAutoSave) {
+        onAutoSave(valuesRef.current)
+      }
+    }
+  }, [onAutoSave])
 
   useEffect(() => {
     if (entryPrice > 0 && exitPrice !== undefined && exitPrice !== null && exitPrice > 0 && size > 0) {

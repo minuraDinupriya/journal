@@ -61,7 +61,15 @@ export default function EditTradePage() {
           <TradeForm 
             mode="edit" 
             initialData={trade}
-            onSubmit={handleSubmit} 
+            onSubmit={handleSubmit}
+            onAutoSave={(data) => {
+              // Quietly save in the background
+              fetch(`/api/trades/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+              }).catch(() => {})
+            }}
             isSubmitting={isUpdating} 
           />
         </CardContent>

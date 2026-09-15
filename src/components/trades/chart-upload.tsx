@@ -93,7 +93,16 @@ export function ChartUpload({ value = [], onChange }: ChartUploadProps) {
   }, [onDrop]);
 
   const removeImage = (indexToRemove: number) => {
+    const originalValue = [...value];
     onChange(value.filter((_, idx) => idx !== indexToRemove))
+    toast("Image removed", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          onChange(originalValue);
+        }
+      }
+    })
   }
 
   return (
