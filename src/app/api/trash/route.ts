@@ -4,6 +4,8 @@ import { getDeletedJournalEntries } from "@/lib/db/journal-repository";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // 1. Run cleanup (delete anything older than 30 days)

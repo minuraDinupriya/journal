@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getTrades } from "@/lib/db/trade-repository";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
