@@ -34,7 +34,7 @@ interface TradeTableProps {
   trades: Trade[]
   isLoading: boolean
   onDelete: (id: string) => void
-  onUpdate?: (id: string, data: any) => void
+  onUpdate?: (id: string, data: any, background?: boolean) => void
 }
 
 type SortField = 'date' | 'asset' | 'pnl'
@@ -124,7 +124,7 @@ export function TradeTable({ trades, isLoading, onDelete, onUpdate }: TradeTable
                   <Checkbox 
                     checked={trade.isReviewed || false} 
                     onCheckedChange={(checked) => {
-                      if (onUpdate) onUpdate(trade.id, { isReviewed: !!checked })
+                      if (onUpdate) onUpdate(trade.id, { isReviewed: !!checked }, true)
                     }}
                     aria-label="Mark as reviewed"
                   />

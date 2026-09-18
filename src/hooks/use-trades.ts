@@ -107,8 +107,8 @@ export function useTrades() {
     }
   }, [removeTrade, setLoading, setError]);
 
-  const updateTrade = useCallback(async (id: string, data: Partial<TradeFormData>) => {
-    setLoading(true);
+  const updateTrade = useCallback(async (id: string, data: Partial<TradeFormData>, background: boolean = false) => {
+    if (!background) setLoading(true);
     setError(null);
     try {
       const response = await fetch(`/api/trades/${id}`, {
@@ -125,7 +125,9 @@ export function useTrades() {
 
       const updatedTrade = await response.json();
       updateTradeInStore(id, updatedTrade);
-      toast.success('Trade updated successfully');
+      // Optional: don't show toast for background updates if we don't want to spam the user,
+      // but the user didn't complain about the toast. Let's keep it or remove it?
+      if (!background) toast.success('Trade updated successfully');
       return updatedTrade;
     } catch (err: any) {
       const message = err.message || 'An error occurred while updating the trade';
@@ -133,7 +135,7 @@ export function useTrades() {
       toast.error(message);
       throw err;
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [updateTradeInStore, setLoading, setError]);
 
