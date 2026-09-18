@@ -34,6 +34,7 @@ export interface Trade {
   tradingViewLink: string | null;
   source: TradeSource;
   createdAt: string; // ISO string
+  isReviewed?: boolean;
   tags: Tag[];
 }
 

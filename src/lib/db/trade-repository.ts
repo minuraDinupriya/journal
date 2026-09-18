@@ -26,6 +26,7 @@ export type TradeFormData = {
   chartImages?: string[];
   tradingViewLink?: string | null;
   source?: string;
+  isReviewed?: boolean;
   tagIds?: string[];
 };
 

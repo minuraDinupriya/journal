@@ -8,7 +8,7 @@ import { TradeTable } from "@/components/trades/trade-table"
 import { Plus, Upload } from "lucide-react"
 
 export default function TradesPage() {
-  const { trades, isLoading, deleteTrade } = useTrades()
+  const { trades, isLoading, deleteTrade, updateTrade } = useTrades()
 
   const totalTrades = trades.length
   const winningTrades = trades.filter(t => (t.pnl || 0) > 0).length
@@ -69,7 +69,7 @@ export default function TradesPage() {
           <CardTitle>Trade History</CardTitle>
         </CardHeader>
         <CardContent>
-          <TradeTable trades={trades} isLoading={isLoading} onDelete={deleteTrade} />
+          <TradeTable trades={trades} isLoading={isLoading} onDelete={deleteTrade} onUpdate={updateTrade} />
         </CardContent>
       </Card>
     </div>

@@ -85,6 +85,8 @@ export function parseNinjaTraderCsv(csvContent: string): CsvParseResult<TradeFor
           tradingViewLink: null,
           stopLoss: null,
           realizedRr: null,
+          isReviewed: false,
+          tagIds: [],
         };
 
         data.push(tradeData);

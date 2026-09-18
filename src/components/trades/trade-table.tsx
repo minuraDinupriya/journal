@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Eye, Trash2, ArrowUpDown } from "lucide-react"
 import {
@@ -33,12 +34,13 @@ interface TradeTableProps {
   trades: Trade[]
   isLoading: boolean
   onDelete: (id: string) => void
+  onUpdate?: (id: string, data: any) => void
 }
 
 type SortField = 'date' | 'asset' | 'pnl'
 type SortOrder = 'asc' | 'desc'
 
-export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
+export function TradeTable({ trades, isLoading, onDelete, onUpdate }: TradeTableProps) {
   const router = useRouter()
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
@@ -90,6 +92,7 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12"></TableHead>
             <TableHead className="cursor-pointer" onClick={() => handleSort('date')}>
               Date <ArrowUpDown className="w-3 h-3 inline-block ml-1" />
             </TableHead>
@@ -117,6 +120,15 @@ export function TradeTable({ trades, isLoading, onDelete }: TradeTableProps) {
 
             return (
               <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/trades/${trade.id}`)}>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox 
+                    checked={trade.isReviewed || false} 
+                    onCheckedChange={(checked) => {
+                      if (onUpdate) onUpdate(trade.id, { isReviewed: !!checked })
+                    }}
+                    aria-label="Mark as reviewed"
+                  />
+                </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {format(new Date(trade.createdAt), "MMM dd, yyyy h:mm a")}
                 </TableCell>

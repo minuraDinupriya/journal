@@ -113,6 +113,8 @@ export function parseMt5Csv(csvContent: string): CsvParseResult<TradeFormData> {
           chartImagePath: null,
           tradingViewLink: null,
           stopLoss: null,
+          isReviewed: false,
+          tagIds: [],
           realizedRr: null,
         };
 

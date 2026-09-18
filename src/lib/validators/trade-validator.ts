@@ -22,6 +22,7 @@ export const tradeFormSchema = z.object({
   chartImages: z.array(z.string()).optional(),
   tradingViewLink: z.union([z.literal(""), z.string().url()]).nullable().optional(),
   source: z.string().default('MANUAL'),
+  isReviewed: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
 });
 
