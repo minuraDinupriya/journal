@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartUpload } from "@/components/trades/chart-upload"
+import { VoiceRecorder } from "@/components/ui/voice-recorder"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -258,17 +259,26 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="preTradeNotes">Pre-Trade Notes</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="preTradeNotes">Pre-Trade Notes</Label>
+            <VoiceRecorder onTranscript={(text) => setValue("preTradeNotes", (getValues("preTradeNotes") ? getValues("preTradeNotes") + " " : "") + text, { shouldDirty: true })} />
+          </div>
           <Textarea id="preTradeNotes" {...register("preTradeNotes")} placeholder="What was your thesis?" rows={3} />
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="duringTradeNotes">During-Trade Notes</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="duringTradeNotes">During-Trade Notes</Label>
+            <VoiceRecorder onTranscript={(text) => setValue("duringTradeNotes", (getValues("duringTradeNotes") ? getValues("duringTradeNotes") + " " : "") + text, { shouldDirty: true })} />
+          </div>
           <Textarea id="duringTradeNotes" {...register("duringTradeNotes")} placeholder="What are you thinking while the trade is open?" rows={3} />
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="postTradeNotes">Post-Trade Notes</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="postTradeNotes">Post-Trade Notes</Label>
+            <VoiceRecorder onTranscript={(text) => setValue("postTradeNotes", (getValues("postTradeNotes") ? getValues("postTradeNotes") + " " : "") + text, { shouldDirty: true })} />
+          </div>
           <Textarea id="postTradeNotes" {...register("postTradeNotes")} placeholder="What went well? What could be improved?" rows={3} />
         </div>
 

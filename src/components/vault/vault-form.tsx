@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartUpload } from "@/components/trades/chart-upload"
+import { VoiceRecorder } from "@/components/ui/voice-recorder"
 import { VaultItem, VaultItemType, VaultFormData } from "@/types/vault"
 import { toast } from "sonner"
 
@@ -110,7 +111,10 @@ export function VaultForm({ item, onClose, onSuccess }: VaultFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="content">Content & Rules</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="content">Content & Rules</Label>
+            <VoiceRecorder onTranscript={(text) => setContent(prev => prev + (prev ? " " : "") + text)} />
+          </div>
           <Textarea 
             id="content" 
             placeholder="Describe the strategy, entry criteria, exit rules, and conditions..."

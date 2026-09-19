@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoodSelector } from "@/components/journal/mood-selector";
+import { VoiceRecorder } from "@/components/ui/voice-recorder";
 import { JournalEntry, JournalFormData } from "@/types/journal";
 import { Loader2 } from "lucide-react";
 
@@ -58,7 +59,10 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="content">Journal Entry</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="content">Journal Entry</Label>
+          <VoiceRecorder onTranscript={(text) => setContent(prev => prev + (prev ? " " : "") + text)} />
+        </div>
         <Textarea 
           id="content" 
           placeholder="How did you feel during your trades today? Did you stick to your plan?" 
