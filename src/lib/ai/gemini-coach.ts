@@ -44,8 +44,8 @@ export async function getAiCoachResponse(apiKey: string, userMessage: string, sy
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-    });
+      model: 'gemini-3.6-flash',
+    }, { apiVersion: 'v1beta' });
 
     const result = await model.generateContent({
       contents: [
@@ -71,8 +71,8 @@ export async function generateTradeInsight(apiKey: string, trade: Trade): Promis
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-    });
+      model: 'gemini-3.6-flash',
+    }, { apiVersion: 'v1beta' });
 
     const systemInstruction = 'You are an expert trading coach. Provide a short, insightful analysis of a single trade.';
     
