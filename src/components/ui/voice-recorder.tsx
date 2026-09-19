@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { Mic, Square, Loader2, Sparkles } from "lucide-react"
+import { Mic, Square, Loader2, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,7 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const isCancelledRef = useRef(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const animFrameRef = useRef<number | null>(null)
@@ -34,7 +35,53 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
     }
   }, [])
 
+  const cancelRecording = useCallback(() => {
+    isCancelledRef.current = true
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current)
+      animFrameRef.current = null
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      audioCtxRef.current.close().catch(() => {})
+      audioCtxRef.current = null
+    }
+
+    if (mediaRecorderRef.current && isRecording) {
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (_) {}
+      setIsRecording(false)
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      }
+    }
+
+    chunksRef.current = []
+    setRecordSeconds(0)
+    toast.info("Recording cancelled")
+  }, [isRecording])
+
+  // Allow pressing Escape to quickly cancel an active recording
+  useEffect(() => {
+    if (!isRecording) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        cancelRecording()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isRecording, cancelRecording])
+
   const stopRecording = useCallback(() => {
+    isCancelledRef.current = false
+
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
@@ -61,6 +108,8 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
 
   const startRecording = useCallback(async () => {
     try {
+      isCancelledRef.current = false
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -126,6 +175,13 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
       }
 
       mediaRecorder.onstop = async () => {
+        // If recording was cancelled, discard and exit immediately
+        if (isCancelledRef.current) {
+          isCancelledRef.current = false
+          chunksRef.current = []
+          return
+        }
+
         setIsProcessing(true)
         const toastId = "transcribing-audio"
         toast.loading("⚡ Gemini is transcribing your voice note...", { id: toastId })
@@ -237,7 +293,7 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
         </div>
       )}
 
-      {/* Action Button */}
+      {/* Action Button: Stop & Save when recording, Voice Type when idle */}
       <Button
         type="button"
         variant={isRecording ? "destructive" : isProcessing ? "outline" : "ghost"}
@@ -269,6 +325,21 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
           </>
         )}
       </Button>
+
+      {/* Cancel button: appears only while recording so user can discard without sending to Gemini */}
+      {isRecording && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/10 transition-all duration-150 animate-in fade-in zoom-in-95"
+          onClick={cancelRecording}
+          title="Cancel recording without saving (or press Esc)"
+        >
+          <X className="w-3.5 h-3.5 mr-1" />
+          Cancel
+        </Button>
+      )}
     </div>
   )
 }
