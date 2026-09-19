@@ -90,6 +90,19 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
   }, [onAutoSave])
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (!isSubmitting) {
+          handleSubmit(onSubmit, onError)()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleSubmit, onSubmit, isSubmitting])
+
+  useEffect(() => {
     if (entryPrice > 0 && exitPrice !== undefined && exitPrice !== null && exitPrice > 0 && size > 0) {
       let pnl = 0
       if (direction === "LONG") {
@@ -298,9 +311,12 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
         <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} title="Press Ctrl+S to save">
           {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {mode === 'create' ? 'Create Trade' : 'Save Changes'}
+          <kbd className="ml-2 hidden sm:inline-flex items-center text-[10px] bg-primary-foreground/20 text-primary-foreground px-1.5 py-0.5 rounded font-mono font-medium">
+            Ctrl+S
+          </kbd>
         </Button>
       </div>
     </form>

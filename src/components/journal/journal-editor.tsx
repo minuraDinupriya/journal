@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,19 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
   };
 
   const loading = isSaving || internalSaving;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!loading && content.trim()) {
+          handleSave();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [loading, content, date, mood, onSave]);
 
   return (
     <div className="space-y-6">
@@ -77,9 +90,12 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
         <Button variant="outline" onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={loading || !content.trim()}>
+        <Button onClick={handleSave} disabled={loading || !content.trim()} title="Press Ctrl+S to save">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Entry
+          <kbd className="ml-2 hidden sm:inline-flex items-center text-[10px] bg-primary-foreground/20 text-primary-foreground px-1.5 py-0.5 rounded font-mono font-medium">
+            Ctrl+S
+          </kbd>
         </Button>
       </div>
     </div>

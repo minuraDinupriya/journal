@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,21 @@ export function VaultForm({ item, onClose, onSuccess }: VaultFormProps) {
       return []
     }
   })
+
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (!isSubmitting && formRef.current) {
+          formRef.current.requestSubmit()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSubmitting])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,7 +86,7 @@ export function VaultForm({ item, onClose, onSuccess }: VaultFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
           <Button type="button" variant="ghost" size="icon" onClick={onClose} disabled={isSubmitting}>
@@ -79,9 +94,12 @@ export function VaultForm({ item, onClose, onSuccess }: VaultFormProps) {
           </Button>
           <h1 className="text-2xl font-bold">{isEditing ? 'Edit Vault Item' : 'New Vault Item'}</h1>
         </div>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} title="Press Ctrl+S to save">
           {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
           {isEditing ? 'Save Changes' : 'Secure Item'}
+          <kbd className="ml-2 hidden sm:inline-flex items-center text-[10px] bg-primary-foreground/20 text-primary-foreground px-1.5 py-0.5 rounded font-mono font-medium">
+            Ctrl+S
+          </kbd>
         </Button>
       </div>
 
