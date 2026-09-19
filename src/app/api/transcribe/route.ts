@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
@@ -11,25 +8,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No audio data provided" }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API key is not configured" }, { status: 500 });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "your-gemini-api-key-here") {
+      return NextResponse.json({ error: "Gemini API key is not configured." }, { status: 500 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const prompt = "Please transcribe the following audio accurately. Return ONLY the transcribed text without any markdown formatting, conversational filler, or extra punctuation. If there is no speech, return an empty string.";
-
-    const result = await model.generateContent([
-      prompt,
+    // Use the v1beta endpoint which supports AQ. style API keys from AI Studio
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
-        inlineData: {
-          mimeType: mimeType || "audio/webm",
-          data: audioData // This is the base64 string
-        }
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                text: "Please transcribe the following audio accurately. Return ONLY the transcribed text with no extra formatting, commentary, or punctuation beyond what was spoken. If there is no speech, return an empty string."
+              },
+              {
+                inlineData: {
+                  mimeType: mimeType || "audio/webm",
+                  data: audioData
+                }
+              }
+            ]
+          }]
+        })
       }
-    ]);
+    );
 
-    const text = result.response.text();
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessage = errorData?.error?.message || `API error: ${response.status}`;
+      console.error("Gemini API error:", errorData);
+      return NextResponse.json({ error: errorMessage }, { status: response.status });
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     return NextResponse.json({ text: text.trim() });
   } catch (error: any) {
