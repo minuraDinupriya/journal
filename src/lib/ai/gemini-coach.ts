@@ -36,31 +36,42 @@ Instructions:
 `;
 }
 
+const COACH_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+];
+
 export async function getAiCoachResponse(apiKey: string, userMessage: string, systemPrompt: string): Promise<string> {
   if (!apiKey) {
     throw new Error('API key is required.');
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.6-flash',
-    });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  let lastError = '';
 
-    const result = await model.generateContent({
-      contents: [
-        { role: 'user', parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
-      ],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 2048,
-      },
-    });
+  for (const modelName of COACH_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
+        contents: [
+          { role: 'user', parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
+        ],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 2048,
+        },
+      });
 
-    return result.response.text();
-  } catch (error: any) {
-    throw new Error(`Failed to get response from Gemini AI: ${error.message}`);
+      return result.response.text();
+    } catch (error: any) {
+      console.warn(`[AI Coach] Model ${modelName} failed: ${error.message}. Trying next model...`);
+      lastError = error.message;
+    }
   }
+
+  throw new Error(`Failed to get response from Gemini AI: ${lastError}`);
 }
 
 export async function generateTradeInsight(apiKey: string, trade: Trade): Promise<string> {
@@ -68,15 +79,9 @@ export async function generateTradeInsight(apiKey: string, trade: Trade): Promis
     throw new Error('API key is required.');
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.6-flash',
-    });
-
-    const systemInstruction = 'You are an expert trading coach. Provide a short, insightful analysis of a single trade.';
-    
-    const tradeInfo = `
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const systemInstruction = 'You are an expert trading coach. Provide a short, insightful analysis of a single trade.';
+  const tradeInfo = `
 Trade Details:
 - Asset: ${trade.asset} (${trade.assetClass})
 - Direction: ${trade.direction}
@@ -86,16 +91,25 @@ Trade Details:
 - Setup/Notes: ${trade.setup} / ${trade.postTradeNotes}
 `;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: systemInstruction + '\n\n' + tradeInfo }] }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 500,
-      },
-    });
+  let lastError = '';
+  for (const modelName of COACH_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: systemInstruction + '\n\n' + tradeInfo }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 500,
+        },
+      });
 
-    return result.response.text();
-  } catch (error: any) {
-    throw new Error(`Failed to generate trade insight: ${error.message}`);
+      return result.response.text();
+    } catch (error: any) {
+      console.warn(`[Trade Insight] Model ${modelName} failed: ${error.message}. Trying next model...`);
+      lastError = error.message;
+    }
   }
+
+  throw new Error(`Failed to generate trade insight: ${lastError}`);
 }
+

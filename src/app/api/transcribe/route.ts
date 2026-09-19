@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 
+// Ordered priority list of models to try if any model is overloaded (503 / 429)
+const CANDIDATE_MODELS = [
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+];
+
 export async function POST(req: Request) {
   try {
     const { audioData, mimeType } = await req.json();
@@ -15,7 +23,6 @@ export async function POST(req: Request) {
 
     const cleanMime = (mimeType || "audio/webm").split(";")[0];
 
-    // Use gemini-3.6-flash on the v1beta endpoint
     const transcriptionPrompt = `You are a high-accuracy, verbatim speech-to-text transcriber specialized in financial trading, charting, and trading psychology journals.
 
 Your task: Transcribe the speaker's voice EXACTLY word-for-word as spoken.
@@ -33,65 +40,89 @@ Rules:
 4. Format numbers, prices, and decimals accurately (e.g., 29450, 4362.50, -1.00R, +$89.50).
 5. If the audio is silent or contains only static, output nothing.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: transcriptionPrompt
-              },
-              {
-                inlineData: {
-                  mimeType: cleanMime,
-                  data: audioData
-                }
+    let lastErrorMessage = "Failed to transcribe audio";
+    let lastStatusCode = 500;
+
+    // Try each model in sequence; if a model hits high demand or rate limits, cascade to the next
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  {
+                    text: transcriptionPrompt
+                  },
+                  {
+                    inlineData: {
+                      mimeType: cleanMime,
+                      data: audioData
+                    }
+                  }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.0,
+                maxOutputTokens: 2048
               }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.0,
-            maxOutputTokens: 2048
+            })
           }
-        })
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errMsg = errorData?.error?.message || `API error: ${response.status}`;
+          lastErrorMessage = errMsg;
+          lastStatusCode = response.status;
+
+          console.warn(`[Transcribe] Model ${model} returned ${response.status} (${errMsg}). Trying next model...`);
+
+          // If it's a high demand (503), rate limit (429), or server error (500), try the next candidate model
+          if (response.status === 503 || response.status === 429 || response.status === 500 || response.status === 404) {
+            continue;
+          }
+
+          // If client authentication error, stop immediately
+          return NextResponse.json({ error: errMsg }, { status: response.status });
+        }
+
+        const data = await response.json();
+        const candidate = data?.candidates?.[0];
+        const parts = candidate?.content?.parts || [];
+
+        // Extract actual text (ignoring internal thinking/reasoning blocks)
+        const textParts = parts
+          .filter((p: any) => p.text && !p.thought)
+          .map((p: any) => p.text);
+
+        let rawText = textParts.length > 0 ? textParts.join(" ") : (parts[0]?.text || "");
+        let cleanedText = rawText.trim();
+
+        // Check if the model gave a meta-reply about silence or missing speech
+        const lower = cleanedText.toLowerCase();
+        if (
+          lower.includes("no speech") ||
+          lower.includes("no audio") ||
+          lower.includes("silent") ||
+          lower.includes("cannot transcribe") ||
+          lower === "none"
+        ) {
+          cleanedText = "";
+        }
+
+        // Successfully transcribed!
+        return NextResponse.json({ text: cleanedText });
+      } catch (err: any) {
+        console.warn(`[Transcribe] Network error on model ${model}: ${err.message}. Trying next model...`);
+        lastErrorMessage = err.message;
       }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData?.error?.message || `API error: ${response.status}`;
-      console.error("Gemini Transcription API error:", errorData);
-      return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
 
-    const data = await response.json();
-    const candidate = data?.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
-    
-    // Extract actual text (ignoring internal thinking/reasoning blocks)
-    const textParts = parts
-      .filter((p: any) => p.text && !p.thought)
-      .map((p: any) => p.text);
-
-    let rawText = textParts.length > 0 ? textParts.join(" ") : (parts[0]?.text || "");
-    let cleanedText = rawText.trim();
-
-    // Check if the model gave a meta-reply about silence or missing speech
-    const lower = cleanedText.toLowerCase();
-    if (
-      lower.includes("no speech") ||
-      lower.includes("no audio") ||
-      lower.includes("silent") ||
-      lower.includes("cannot transcribe") ||
-      lower === "none"
-    ) {
-      cleanedText = "";
-    }
-
-    return NextResponse.json({ text: cleanedText });
+    return NextResponse.json({ error: lastErrorMessage }, { status: lastStatusCode });
   } catch (error: any) {
     console.error("Transcription route error:", error);
     return NextResponse.json({ error: error.message || "Failed to transcribe audio" }, { status: 500 });
