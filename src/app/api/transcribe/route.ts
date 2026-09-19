@@ -16,6 +16,23 @@ export async function POST(req: Request) {
     const cleanMime = (mimeType || "audio/webm").split(";")[0];
 
     // Use gemini-3.6-flash on the v1beta endpoint
+    const transcriptionPrompt = `You are a high-accuracy, verbatim speech-to-text transcriber specialized in financial trading, charting, and trading psychology journals.
+
+Your task: Transcribe the speaker's voice EXACTLY word-for-word as spoken.
+
+Trading & Market Domain Vocabulary:
+- Assets & Symbols: NQ, ES, MNQ, MES, Gold, XAUUSD, EURUSD, GBPUSD, DXY, SPX, Bitcoin, BTC, ETH, US30, Crude Oil, Futures, Forex, Crypto, Stocks.
+- Core Concepts: Long, Short, PnL / P&L, Stop Loss (SL), Take Profit (TP), Break Even (BE), Risk-to-Reward (R:R), R-multiple (e.g. 1R, 2R, -1R), Entry price, Exit price, Lot size, Contracts, Slippage, Spread, Commission, Fees.
+- Technical Setups: Fair Value Gap (FVG), Inverse FVG, Order Block (OB), Liquidity sweep, Break of Structure (BOS), Change of Character (CHoCH), Range, Breakout, Pullback, Retracement, Bull flag, Bear flag, Wedge, Double top, Double bottom, Higher High (HH), Higher Low (HL), Lower High (LH), Lower Low (LL), VWAP, EMA, SMA, Support, Resistance, Supply, Demand, Wick, Engulfing candle.
+- Psychology: FOMO, revenge trading, tilted, hesitant, disciplined, overtrading, patient, confident, anxious.
+
+Rules:
+1. Output ONLY the literal transcription of what was said.
+2. Do NOT summarize, rewrite, rephrase, or add polite conversation (like "Here is the transcription:").
+3. Ensure trading terminology and acronyms (like NQ, SL, TP, FVG, PnL, R:R) are spelled accurately according to the context above.
+4. Format numbers, prices, and decimals accurately (e.g., 29450, 4362.50, -1.00R, +$89.50).
+5. If the audio is silent or contains only static, output nothing.`;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
@@ -25,7 +42,7 @@ export async function POST(req: Request) {
           contents: [{
             parts: [
               {
-                text: "Transcribe the spoken words in this audio exactly as said. Output ONLY the plain transcribed text without markdown, quotes, explanations, or commentary. If there is no discernible speech or only silence, return empty text."
+                text: transcriptionPrompt
               },
               {
                 inlineData: {
@@ -36,7 +53,7 @@ export async function POST(req: Request) {
             ]
           }],
           generationConfig: {
-            temperature: 0.1,
+            temperature: 0.0,
             maxOutputTokens: 2048
           }
         })
