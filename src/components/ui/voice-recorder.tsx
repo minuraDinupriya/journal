@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Mic } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -13,70 +13,91 @@ interface VoiceRecorderProps {
 
 export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const [recognition, setRecognition] = useState<any>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition()
-        rec.continuous = true
-        rec.interimResults = true // We want true to see it type in real time, but that requires more complex logic. 
-        // Let's stick to false for interim to keep it simple, it will just output chunks of finalized sentences.
-        rec.interimResults = false 
-        rec.lang = "en-US"
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+    }
+  }, [isRecording])
 
-        rec.onresult = (event: any) => {
-          let finalTranscript = ""
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        setIsProcessing(true)
+        try {
+          const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' })
+          
+          // Convert blob to base64
+          const reader = new FileReader()
+          reader.readAsDataURL(audioBlob)
+          reader.onloadend = async () => {
+            const base64data = reader.result?.toString().split(',')[1]
+            if (!base64data) throw new Error("Failed to read audio data")
+
+            toast.info("Transcribing audio...")
+            
+            const res = await fetch('/api/transcribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                audioData: base64data,
+                mimeType: mediaRecorder.mimeType || 'audio/webm'
+              })
+            })
+
+            if (!res.ok) {
+              const err = await res.json()
+              throw new Error(err.error || "Transcription failed")
+            }
+
+            const data = await res.json()
+            if (data.text) {
+              onTranscript(data.text)
+              toast.success("Transcription complete")
+            } else {
+              toast.error("No speech detected")
             }
           }
-          if (finalTranscript) {
-            onTranscript(finalTranscript.trim())
-          }
+        } catch (error: any) {
+          console.error(error)
+          toast.error(error.message || "Failed to process audio")
+        } finally {
+          setIsProcessing(false)
         }
-
-        rec.onerror = (event: any) => {
-          if (event.error !== 'no-speech') {
-            console.error("Speech recognition error:", event.error)
-            toast.error("Microphone error. Please check permissions.")
-            setIsRecording(false)
-          }
-        }
-
-        rec.onend = () => {
-          setIsRecording(false)
-        }
-
-        setRecognition(rec)
       }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+      toast.info("Recording... click stop when done.")
+    } catch (err) {
+      console.error(err)
+      toast.error("Microphone access denied. Please check permissions.")
     }
   }, [onTranscript])
 
-  const toggleRecording = useCallback(() => {
-    if (!recognition) {
-      toast.error("Voice recognition is not supported in this browser.")
-      return
-    }
-
+  const toggleRecording = () => {
     if (isRecording) {
-      recognition.stop()
-      setIsRecording(false)
+      stopRecording()
     } else {
-      try {
-        recognition.start()
-        setIsRecording(true)
-        toast.info("Listening... Speak now.")
-      } catch (e) {
-        console.error(e)
-        setIsRecording(false)
-      }
+      startRecording()
     }
-  }, [isRecording, recognition])
-
-  if (!recognition) return null
+  }
 
   return (
     <Button
@@ -86,13 +107,15 @@ export function VoiceRecorder({ onTranscript, className }: VoiceRecorderProps) {
       className={cn(
         "h-8 px-2 text-xs",
         isRecording ? "text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 animate-pulse" : "text-muted-foreground",
+        isProcessing ? "opacity-50 cursor-not-allowed" : "",
         className
       )}
       onClick={toggleRecording}
+      disabled={isProcessing}
       title={isRecording ? "Stop Recording" : "Start Voice Typing"}
     >
-      <Mic className="w-4 h-4 mr-1" />
-      {isRecording ? "Listening..." : "Voice Type"}
+      <Mic className={cn("w-4 h-4 mr-1", isProcessing && "animate-spin")} />
+      {isProcessing ? "Processing..." : isRecording ? "Stop Recording" : "Voice Type"}
     </Button>
   )
 }
