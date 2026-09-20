@@ -9,6 +9,7 @@ import { MoodSelector } from "@/components/journal/mood-selector";
 import { VoiceRecorder } from "@/components/ui/voice-recorder";
 import { JournalEntry, JournalFormData } from "@/types/journal";
 import { Loader2 } from "lucide-react";
+import { toLocalDateString } from "@/lib/utils";
 
 interface JournalEditorProps {
   initialData?: JournalEntry;
@@ -20,8 +21,8 @@ interface JournalEditorProps {
 export function JournalEditor({ initialData, onSave, onCancel, isSaving }: JournalEditorProps) {
   const [date, setDate] = useState(
     initialData?.date 
-      ? new Date(initialData.date).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+      ? toLocalDateString(initialData.date)
+      : toLocalDateString(new Date())
   );
   const [mood, setMood] = useState(initialData?.mood || 3);
   const [content, setContent] = useState(initialData?.content || "");

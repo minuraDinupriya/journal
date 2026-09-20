@@ -16,6 +16,7 @@ import { ChartUpload } from "@/components/trades/chart-upload"
 import { VoiceRecorder } from "@/components/ui/voice-recorder"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { toLocalDatetimeString } from "@/lib/utils"
 
 import { tradeFormSchema, TradeFormData } from "@/lib/validators/trade-validator"
 
@@ -41,8 +42,8 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
       realizedRr: initialData?.realizedRr ?? undefined,
       size: initialData?.size || 0,
       fees: initialData?.fees || 0,
-      entryDate: initialData?.entryDate ? new Date(initialData.entryDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
-      exitDate: initialData?.exitDate ? new Date(initialData.exitDate).toISOString().slice(0, 16) : undefined,
+      entryDate: initialData?.entryDate ? toLocalDatetimeString(initialData.entryDate) : toLocalDatetimeString(new Date()),
+      exitDate: initialData?.exitDate ? toLocalDatetimeString(initialData.exitDate) : undefined,
       strategy: initialData?.strategy || "",
       setup: initialData?.setup || "",
       preTradeNotes: initialData?.preTradeNotes || "",
