@@ -6,7 +6,7 @@ import { useCsvImport } from "@/hooks/use-csv-import"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Zap, FlaskConical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
@@ -14,6 +14,7 @@ export function CsvImportWizard() {
   const { file, setFile, preview, isUploading, importResult, parseFile, importTrades, reset } = useCsvImport()
   
   const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [importTradeType, setImportTradeType] = useState<'LIVE' | 'BACKTEST'>('LIVE')
 
   useEffect(() => {
     if (file && step === 1) {
@@ -39,7 +40,7 @@ export function CsvImportWizard() {
   })
 
   const handleImport = async () => {
-    await importTrades()
+    await importTrades(importTradeType)
     setStep(3)
   }
 
@@ -97,6 +98,38 @@ export function CsvImportWizard() {
               </div>
             </div>
 
+            {/* Import destination selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-muted/40 border rounded-lg">
+              <div>
+                <span className="text-sm font-semibold block">Import Destination</span>
+                <span className="text-xs text-muted-foreground">Choose whether these trades belong to Live Journal or Backtesting</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-background border p-1 rounded-md">
+                <button
+                  type="button"
+                  onClick={() => setImportTradeType('LIVE')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1.5",
+                    importTradeType === 'LIVE' ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                  Live Trades
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportTradeType('BACKTEST')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1.5",
+                    importTradeType === 'BACKTEST' ? "bg-purple-600 text-white font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <FlaskConical className="w-3.5 h-3.5 text-purple-200" />
+                  Backtesting
+                </button>
+              </div>
+            </div>
+
             <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -140,7 +173,7 @@ export function CsvImportWizard() {
             </div>
             <h3 className="text-2xl font-bold">Import Successful</h3>
             <p className="text-muted-foreground max-w-sm">
-              Successfully imported {importResult.imported} trades.
+              Successfully imported {importResult.imported} trades into {importTradeType === 'BACKTEST' ? 'Backtesting' : 'Live Trades'}.
               {importResult.failed > 0 && <span className="text-red-500 block mt-1"><AlertCircle className="w-4 h-4 inline mr-1"/> {importResult.failed} trades failed.</span>}
             </p>
           </div>
@@ -169,7 +202,7 @@ export function CsvImportWizard() {
               Import More
             </Button>
             <Button asChild>
-              <Link href="/trades">View Trades</Link>
+              <Link href={`/trades?tab=${importTradeType}`}>View Trades</Link>
             </Button>
           </>
         )}

@@ -1,4 +1,4 @@
-import { AssetClass, EmotionalState, TradeDirection, TradeSource } from './trade';
+import { AssetClass, EmotionalState, TradeDirection, TradeSource, TradeType } from './trade';
 
 export interface DashboardMetrics {
   totalTrades: number;
@@ -34,4 +34,5 @@ export interface TradeFilter {
   dateTo?: string;
   direction?: TradeDirection;
   source?: TradeSource;
+  tradeType?: TradeType;
 }

@@ -36,6 +36,7 @@ export function useTrades() {
       if (activeFilters.source) queryParams.append('source', activeFilters.source);
       if (activeFilters.dateFrom) queryParams.append('dateFrom', activeFilters.dateFrom);
       if (activeFilters.dateTo) queryParams.append('dateTo', activeFilters.dateTo);
+      if (activeFilters.tradeType) queryParams.append('tradeType', activeFilters.tradeType);
 
       const response = await fetch(`/api/trades?${queryParams.toString()}`);
       if (!response.ok) {
@@ -139,6 +140,61 @@ export function useTrades() {
     }
   }, [updateTradeInStore, setLoading, setError]);
 
+  const bulkMoveTrades = useCallback(async (ids: string[], targetType: 'LIVE' | 'BACKTEST') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/trades/bulk-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, tradeType: targetType }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to move trades');
+      }
+
+      ids.forEach((id) => {
+        updateTradeInStore(id, { tradeType: targetType });
+      });
+
+      toast.success(`Moved ${ids.length} trade${ids.length > 1 ? 's' : ''} to ${targetType === 'LIVE' ? 'Live' : 'Backtesting'}`);
+    } catch (err: any) {
+      const message = err.message || 'An error occurred while moving trades';
+      setError(message);
+      toast.error(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [updateTradeInStore, setLoading, setError]);
+
+  const bulkDeleteTrades = useCallback(async (ids: string[]) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/trades/bulk-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action: 'delete' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete selected trades');
+      }
+
+      ids.forEach((id) => removeTrade(id));
+      toast.success(`Deleted ${ids.length} trade${ids.length > 1 ? 's' : ''}`);
+    } catch (err: any) {
+      const message = err.message || 'An error occurred while deleting trades';
+      setError(message);
+      toast.error(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [removeTrade, setLoading, setError]);
+
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
@@ -151,6 +207,8 @@ export function useTrades() {
     createTrade, 
     deleteTrade, 
     updateTrade, 
+    bulkMoveTrades,
+    bulkDeleteTrades,
     filters, 
     setFilters, 
     resetFilters 

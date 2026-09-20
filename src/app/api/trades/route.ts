@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const dateTo = searchParams.get("dateTo") || undefined;
     const direction = searchParams.get("direction") || undefined;
     const source = searchParams.get("source") || undefined;
+    const tradeType = searchParams.get("tradeType") || undefined;
 
     const trades = await getTrades({
       userId: DEFAULT_USER_ID,
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
       dateTo,
       direction,
       source,
+      tradeType,
     });
 
     return NextResponse.json(trades);

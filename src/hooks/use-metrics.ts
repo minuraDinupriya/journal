@@ -22,10 +22,13 @@ export function useMetrics() {
   const [tradeScore, setTradeScore] = useState<TradeScoreData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchMetrics = useCallback(async () => {
+  const [currentTradeType, setCurrentTradeType] = useState<'LIVE' | 'BACKTEST' | 'ALL'>('LIVE');
+
+  const fetchMetrics = useCallback(async (tradeType: 'LIVE' | 'BACKTEST' | 'ALL' = 'LIVE') => {
     setIsLoading(true);
+    setCurrentTradeType(tradeType);
     try {
-      const response = await fetch('/api/metrics');
+      const response = await fetch(`/api/metrics?tradeType=${tradeType}`);
       if (!response.ok) {
         throw new Error('Failed to fetch metrics');
       }
@@ -44,7 +47,7 @@ export function useMetrics() {
   }, []);
 
   useEffect(() => {
-    fetchMetrics();
+    fetchMetrics('LIVE');
   }, [fetchMetrics]);
 
   return {
@@ -53,6 +56,7 @@ export function useMetrics() {
     tiltmeter,
     dailyPnl,
     tradeScore,
+    currentTradeType,
     isLoading,
     refreshMetrics: fetchMetrics
   };

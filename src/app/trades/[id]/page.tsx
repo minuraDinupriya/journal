@@ -6,8 +6,9 @@ import { useTrades } from "@/hooks/use-trades"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Pencil, Trash2, Zap, FlaskConical } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from "sonner"
 import { Trade } from "@/types/trade"
 import { EMOTIONAL_STATES } from "@/lib/constants"
 import {
@@ -26,7 +27,7 @@ export default function TradeDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { deleteTrade } = useTrades()
+  const { deleteTrade, updateTrade } = useTrades()
   
   const [trade, setTrade] = useState<Trade | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -104,19 +105,41 @@ export default function TradeDetailsPage() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("lastViewedTradeId", id);
     }
-    router.push(`/trades#trade-${id}`);
+    const tab = trade?.tradeType === 'BACKTEST' ? 'BACKTEST' : 'LIVE';
+    router.push(`/trades?tab=${tab}#trade-${id}`);
+  };
+
+  const handleToggleTradeType = async () => {
+    if (!trade) return;
+    const targetType = trade.tradeType === 'BACKTEST' ? 'LIVE' : 'BACKTEST';
+    await updateTrade(trade.id, { tradeType: targetType });
+    setTrade(prev => prev ? { ...prev, tradeType: targetType } : null);
+    toast.success(`Trade moved to ${targetType === 'LIVE' ? 'Live Trades' : 'Backtesting'}`);
   };
 
   return (
     <div className="container mx-auto p-6 max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={handleBack} title="Back to trades">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">Trade Details</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleToggleTradeType} title="Move between Live and Backtesting">
+            {trade.tradeType === 'BACKTEST' ? (
+              <>
+                <Zap className="w-4 h-4 mr-2 text-emerald-500" />
+                Move to Live Trades
+              </>
+            ) : (
+              <>
+                <FlaskConical className="w-4 h-4 mr-2 text-purple-400" />
+                Move to Backtesting
+              </>
+            )}
+          </Button>
           <Button variant="outline" onClick={() => router.push(`/trades/${id}/edit`)}>
             <Pencil className="w-4 h-4 mr-2" />
             Edit
@@ -155,6 +178,17 @@ export default function TradeDetailsPage() {
                 <Badge variant={trade.direction === "LONG" ? "default" : "destructive"} className="text-sm">
                   {trade.direction}
                 </Badge>
+                {trade.tradeType === 'BACKTEST' ? (
+                  <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30 flex items-center gap-1">
+                    <FlaskConical className="w-3.5 h-3.5" />
+                    Backtest
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/30 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5" />
+                    Live Trade
+                  </Badge>
+                )}
                 {trade.assetClass && <Badge variant="secondary">{trade.assetClass}</Badge>}
               </div>
               <div className="text-muted-foreground">

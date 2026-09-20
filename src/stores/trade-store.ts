@@ -28,6 +28,7 @@ const defaultFilters: TradeFilter = {
   dateTo: undefined,
   direction: undefined,
   source: undefined,
+  tradeType: undefined,
 };
 
 export const useTradeStore = create<TradeStoreState>((set) => ({

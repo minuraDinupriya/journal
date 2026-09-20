@@ -3,6 +3,8 @@ export type TradeDirection = 'LONG' | 'SHORT';
 export type TradeSource = 'MANUAL' | 'MT5' | 'NINJATRADER';
 export type EmotionalState = 'confident' | 'calm' | 'anxious' | 'fomo' | 'revenge' | 'tilted' | 'disciplined' | 'overconfident' | 'fearful' | 'neutral';
 
+export type TradeType = 'LIVE' | 'BACKTEST';
+
 export interface Tag {
   id: string;
   name: string;
@@ -33,12 +35,14 @@ export interface Trade {
   chartImagePath: string | null;
   tradingViewLink: string | null;
   source: TradeSource;
+  tradeType: TradeType;
   createdAt: string; // ISO string
   isReviewed?: boolean;
   tags: Tag[];
 }
 
-export type TradeFormData = Omit<Trade, 'id' | 'createdAt' | 'userId' | 'tags'> & {
+export type TradeFormData = Omit<Trade, 'id' | 'createdAt' | 'userId' | 'tags' | 'tradeType'> & {
+  tradeType?: TradeType;
   tagIds?: string[];
 };
 

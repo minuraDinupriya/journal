@@ -29,7 +29,7 @@ export function useCsvImport() {
     }
   }, [file]);
 
-  const importTrades = useCallback(async () => {
+  const importTrades = useCallback(async (targetTradeType: 'LIVE' | 'BACKTEST' = 'LIVE') => {
     if (!file) return;
 
     setIsUploading(true);
@@ -37,7 +37,7 @@ export function useCsvImport() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/trades/import', {
+      const response = await fetch(`/api/trades/import?tradeType=${targetTradeType}`, {
         method: 'POST',
         body: formData,
       });

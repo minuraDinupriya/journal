@@ -22,6 +22,7 @@ export const tradeFormSchema = z.object({
   chartImages: z.array(z.string()).optional(),
   tradingViewLink: z.union([z.literal(""), z.string().url()]).nullable().optional(),
   source: z.string().default('MANUAL'),
+  tradeType: z.enum(['LIVE', 'BACKTEST']).default('LIVE'),
   isReviewed: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
 });
@@ -37,6 +38,7 @@ export const csvTradeSchema = z.object({
   entryDate: z.string(),
   exitDate: z.string().nullable().optional(),
   pnl: z.coerce.number().nullable().optional(),
+  tradeType: z.enum(['LIVE', 'BACKTEST']).optional().default('LIVE'),
 });
 
 export const journalEntrySchema = z.object({
@@ -53,6 +55,7 @@ export const tradeFilterSchema = z.object({
   dateTo: z.union([z.string(), z.date()]).optional(),
   direction: z.string().optional(),
   source: z.string().optional(),
+  tradeType: z.string().optional(),
 });
 
 export type TradeFormData = z.infer<typeof tradeFormSchema>;

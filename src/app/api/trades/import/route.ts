@@ -36,8 +36,12 @@ export async function POST(request: Request) {
        }, { status: 400 });
     }
 
+    const tradeTypeQuery = searchParams.get("tradeType") || "LIVE";
+    const tradeType = tradeTypeQuery === "BACKTEST" ? "BACKTEST" : "LIVE";
+
     const tradesToCreate = parseResult.data.map((trade: any) => ({
       ...trade,
+      tradeType,
       userId: DEFAULT_USER_ID
     }));
 

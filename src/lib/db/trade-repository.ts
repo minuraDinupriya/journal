@@ -26,6 +26,7 @@ export type TradeFormData = {
   chartImages?: string[];
   tradingViewLink?: string | null;
   source?: string;
+  tradeType?: string;
   isReviewed?: boolean;
   tagIds?: string[];
 };
@@ -38,6 +39,7 @@ export type TradeFilter = {
   dateTo?: string | Date;
   direction?: string;
   source?: string;
+  tradeType?: string;
 };
 
 export async function createTrade(data: TradeFormData & { userId: string }) {
@@ -49,6 +51,7 @@ export async function createTrade(data: TradeFormData & { userId: string }) {
         ...rest,
         direction: rest.direction.toUpperCase(),
         assetClass: rest.assetClass.toUpperCase(),
+        tradeType: rest.tradeType || 'LIVE',
         entryDate: new Date(entryDate),
         exitDate: exitDate ? new Date(exitDate) : null,
         chartImagePath: chartImages && chartImages.length > 0 ? JSON.stringify(chartImages) : null,
@@ -76,6 +79,7 @@ export async function getTrades(filters?: TradeFilter & { userId: string }) {
       if (filters.emotionalState) where.emotionalState = filters.emotionalState;
       if (filters.direction) where.direction = filters.direction.toUpperCase();
       if (filters.source) where.source = filters.source;
+      if (filters.tradeType) where.tradeType = filters.tradeType;
       
       if (filters.dateFrom || filters.dateTo) {
         where.entryDate = {};
@@ -206,6 +210,7 @@ export async function bulkCreateTrades(trades: (TradeFormData & { userId: string
               ...rest,
               direction: rest.direction.toUpperCase(),
               assetClass: rest.assetClass.toUpperCase(),
+              tradeType: rest.tradeType || 'LIVE',
               entryDate: new Date(entryDate),
               exitDate: exitDate ? new Date(exitDate) : null,
               tags: tagIds && tagIds.length > 0 ? {
@@ -229,3 +234,28 @@ export async function bulkCreateTrades(trades: (TradeFormData & { userId: string
     throw new Error(`Bulk creation failed: ${error.message}`);
   }
 }
+
+export async function bulkUpdateTradeType(ids: string[], tradeType: 'LIVE' | 'BACKTEST') {
+  try {
+    return await prisma.trade.updateMany({
+      where: { id: { in: ids } },
+      data: { tradeType }
+    });
+  } catch (error) {
+    console.error('Error in bulkUpdateTradeType:', error);
+    throw new Error('Failed to bulk update trade types.');
+  }
+}
+
+export async function bulkDeleteTrades(ids: string[]) {
+  try {
+    return await prisma.trade.updateMany({
+      where: { id: { in: ids } },
+      data: { deletedAt: new Date() }
+    });
+  } catch (error) {
+    console.error('Error in bulkDeleteTrades:', error);
+    throw new Error('Failed to bulk delete trades.');
+  }
+}
+

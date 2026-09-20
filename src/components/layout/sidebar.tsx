@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { 
   LayoutDashboard, 
   LineChart, 
@@ -15,16 +15,12 @@ import {
   TrendingUp,
   CalendarDays,
   Trash2,
-  Lock
+  Lock,
+  FlaskConical
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-// Assume a simple ui store exists or create a local state for now if not available
-// We'll use local state if ui-store isn't strictly defined, but user said "Use the ui-store for sidebar state".
-// Since ui-store file isn't requested here, I will create a basic mock or use local state, 
-// actually I'll use Zustand store if I assume one, or simply write a minimal one in local state and comment it.
-// To be safe, I'll create a local Zustand store within this file or just use useState for simplicity and robust code.
 import { create } from "zustand"
 
 interface UiState {
@@ -40,7 +36,8 @@ const useUiStore = create<UiState>((set) => ({
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Calendar", href: "/calendar", icon: CalendarDays },
-  { name: "Trades", href: "/trades", icon: LineChart },
+  { name: "Live Trades", href: "/trades?tab=LIVE", icon: LineChart },
+  { name: "Backtesting", href: "/trades?tab=BACKTEST", icon: FlaskConical },
   { name: "Import", href: "/trades/import", icon: Upload },
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "AI Coach", href: "/ai-coach", icon: Bot },
@@ -49,8 +46,48 @@ const navItems = [
   { name: "Trash", href: "/trash", icon: Trash2 },
 ]
 
-export function Sidebar() {
+function SidebarNavList({ isSidebarOpen }: { isSidebarOpen: boolean }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const tab = searchParams.get("tab")
+
+  return (
+    <nav className="flex flex-col gap-1 px-2">
+      {navItems.map((item) => {
+        let isActive = false
+        if (item.href === "/trades?tab=BACKTEST") {
+          isActive = pathname === "/trades" && tab === "BACKTEST"
+        } else if (item.href === "/trades?tab=LIVE") {
+          isActive = (pathname === "/trades" && tab !== "BACKTEST") || (pathname.startsWith("/trades/") && pathname !== "/trades/import")
+        } else if (item.href === "/") {
+          isActive = pathname === "/"
+        } else {
+          isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+        }
+        
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
+              isActive 
+                ? "bg-primary/10 text-primary font-medium" 
+                : "text-slate-400 hover:text-slate-100 hover:bg-slate-900",
+              !isSidebarOpen && "justify-center px-0"
+            )}
+            title={!isSidebarOpen ? item.name : undefined}
+          >
+            <item.icon className={cn("h-5 w-5 shrink-0", item.href === "/trades?tab=BACKTEST" && isActive ? "text-purple-400" : "")} />
+            {isSidebarOpen && <span>{item.name}</span>}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
+export function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useUiStore()
 
   return (
@@ -75,29 +112,9 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="flex flex-col gap-1 px-2">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
-            
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
-                  isActive 
-                    ? "bg-primary/10 text-primary font-medium" 
-                    : "text-slate-400 hover:text-slate-100 hover:bg-slate-900",
-                  !isSidebarOpen && "justify-center px-0"
-                )}
-                title={!isSidebarOpen ? item.name : undefined}
-              >
-                <item.icon className={cn("h-5 w-5 shrink-0")} />
-                {isSidebarOpen && <span>{item.name}</span>}
-              </Link>
-            )
-          })}
-        </nav>
+        <Suspense fallback={<div className="px-4 text-xs text-slate-500">Loading...</div>}>
+          <SidebarNavList isSidebarOpen={isSidebarOpen} />
+        </Suspense>
       </div>
 
       <div className="p-4 border-t border-slate-800">

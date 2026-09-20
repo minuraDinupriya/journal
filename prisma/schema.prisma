@@ -45,6 +45,7 @@ model Trade {
   chartImagePath  String?
   tradingViewLink String?
   source          String   @default("MANUAL")
+  tradeType       String   @default("LIVE") // LIVE or BACKTEST
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
@@ -54,6 +55,7 @@ model Trade {
   @@index([userId])
   @@index([entryDate])
   @@index([asset])
+  @@index([tradeType])
 }
 
 model Tag {

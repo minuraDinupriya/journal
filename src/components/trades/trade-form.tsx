@@ -14,21 +14,22 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartUpload } from "@/components/trades/chart-upload"
 import { VoiceRecorder } from "@/components/ui/voice-recorder"
-import { Loader2 } from "lucide-react"
+import { Loader2, Zap, FlaskConical } from "lucide-react"
 import { toast } from "sonner"
-import { toLocalDatetimeString } from "@/lib/utils"
+import { toLocalDatetimeString, cn } from "@/lib/utils"
 
 import { tradeFormSchema, TradeFormData } from "@/lib/validators/trade-validator"
 
 interface TradeFormProps {
   mode: 'create' | 'edit'
   initialData?: Trade
+  defaultTradeType?: 'LIVE' | 'BACKTEST'
   onSubmit: (data: TradeFormData) => Promise<void>
   onAutoSave?: (data: TradeFormData) => void
   isSubmitting: boolean
 }
 
-export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmitting }: TradeFormProps) {
+export function TradeForm({ mode, initialData, defaultTradeType, onSubmit, onAutoSave, isSubmitting }: TradeFormProps) {
   const router = useRouter()
   const { register, handleSubmit, setValue, watch, getValues, formState: { errors, isDirty } } = useForm<TradeFormData>({
     resolver: zodResolver(tradeFormSchema) as any,
@@ -53,13 +54,15 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
       tradingViewLink: initialData?.tradingViewLink || "",
       chartImages: initialData?.chartImagePath 
         ? (initialData.chartImagePath.startsWith('[') ? JSON.parse(initialData.chartImagePath) : [initialData.chartImagePath])
-        : []
+        : [],
+      tradeType: (initialData?.tradeType || defaultTradeType || "LIVE") as 'LIVE' | 'BACKTEST'
     }
   })
 
   const [calculatedPnl, setCalculatedPnl] = useState<number | null>(initialData?.pnl ?? null)
   const [calculatedRr, setCalculatedRr] = useState<number | null>(initialData?.realizedRr ?? null)
 
+  const tradeType = watch("tradeType")
   const direction = watch("direction")
   const entryPrice = watch("entryPrice")
   const exitPrice = watch("exitPrice")
@@ -151,6 +154,44 @@ export function TradeForm({ mode, initialData, onSubmit, onAutoSave, isSubmittin
 
   return (
     <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-8">
+      {/* Trade Environment Selector (Live vs Backtesting) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-muted/40 border rounded-xl">
+        <div>
+          <Label className="text-sm font-semibold">Trade Environment</Label>
+          <p className="text-xs text-muted-foreground">
+            Classify whether this trade was executed in live conditions or simulated during backtesting.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 p-1 bg-background border rounded-lg">
+          <button
+            type="button"
+            onClick={() => setValue("tradeType", "LIVE", { shouldDirty: true })}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
+              (tradeType || 'LIVE') === "LIVE"
+                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Zap className="w-3.5 h-3.5 text-emerald-400" />
+            Live Trade
+          </button>
+          <button
+            type="button"
+            onClick={() => setValue("tradeType", "BACKTEST", { shouldDirty: true })}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
+              tradeType === "BACKTEST"
+                ? "bg-purple-600 text-white shadow-sm font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-purple-200" />
+            Backtest
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="asset">Asset</Label>

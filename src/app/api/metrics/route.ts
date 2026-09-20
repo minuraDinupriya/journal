@@ -11,7 +11,14 @@ import { DEFAULT_USER_ID } from "@/lib/constants";
 
 export async function GET(request: Request) {
   try {
-    const trades = await getTrades({ userId: DEFAULT_USER_ID });
+    const { searchParams } = new URL(request.url);
+    const tradeTypeParam = searchParams.get("tradeType");
+    const tradeType = tradeTypeParam === 'ALL' ? undefined : (tradeTypeParam || 'LIVE');
+
+    const trades = await getTrades({ 
+      userId: DEFAULT_USER_ID,
+      tradeType
+    });
 
     const typedTrades = trades as any;
     const metrics = calculateAllMetrics(typedTrades);
