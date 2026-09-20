@@ -153,8 +153,6 @@ function TradesContent() {
             isLoading={isLoading} 
             onDelete={deleteTrade} 
             onUpdate={updateTrade}
-            onBulkMove={bulkMoveTrades}
-            onBulkDelete={bulkDeleteTrades}
             activeTab={activeTab}
           />
         </CardContent>
