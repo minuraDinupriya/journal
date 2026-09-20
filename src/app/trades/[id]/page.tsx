@@ -151,7 +151,7 @@ export default function TradeDetailsPage() {
                 {trade.assetClass && <Badge variant="secondary">{trade.assetClass}</Badge>}
               </div>
               <div className="text-muted-foreground">
-                {trade.entryDate && format(new Date(trade.entryDate), "PPP p")}
+                {(trade.entryDate || trade.createdAt) && format(new Date(trade.entryDate || trade.createdAt), "PPP p")}
                 {trade.exitDate && ` - ${format(new Date(trade.exitDate), "PPP p")}`}
               </div>
             </div>
