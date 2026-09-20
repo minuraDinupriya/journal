@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Trade } from "@/types/trade"
 import { format } from "date-fns"
 import { EMOTIONAL_STATES } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 import {
   Table,
   TableBody,
@@ -44,6 +45,49 @@ export function TradeTable({ trades, isLoading, onDelete, onUpdate }: TradeTable
   const router = useRouter()
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isLoading || trades.length === 0) return
+
+    let targetId: string | null = null
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash
+      if (hash && hash.startsWith("#trade-")) {
+        targetId = hash.replace("#trade-", "")
+      } else {
+        targetId = sessionStorage.getItem("lastViewedTradeId")
+      }
+    }
+
+    if (targetId) {
+      setHighlightedId(targetId)
+
+      // Slight delay to allow DOM render to settle
+      const scrollTimer = setTimeout(() => {
+        const row = document.getElementById(`trade-${targetId}`)
+        if (row) {
+          row.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 150)
+
+      // Gracefully clear the highlight after 3.5 seconds
+      const fadeTimer = setTimeout(() => {
+        setHighlightedId(null)
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("lastViewedTradeId")
+          if (window.location.hash.startsWith("#trade-")) {
+            history.replaceState(null, "", window.location.pathname + window.location.search)
+          }
+        }
+      }, 3500)
+
+      return () => {
+        clearTimeout(scrollTimer)
+        clearTimeout(fadeTimer)
+      }
+    }
+  }, [isLoading, trades])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -119,7 +163,22 @@ export function TradeTable({ trades, isLoading, onDelete, onUpdate }: TradeTable
             const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotionalState)
 
             return (
-              <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/trades/${trade.id}`)}>
+              <TableRow 
+                key={trade.id} 
+                id={`trade-${trade.id}`}
+                className={cn(
+                  "cursor-pointer transition-all duration-500",
+                  highlightedId === trade.id 
+                    ? "bg-primary/20 ring-2 ring-primary/60 border-primary shadow-lg shadow-primary/10" 
+                    : "hover:bg-muted/50"
+                )} 
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("lastViewedTradeId", trade.id)
+                  }
+                  router.push(`/trades/${trade.id}`)
+                }}
+              >
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox 
                     checked={trade.isReviewed || false} 
@@ -132,7 +191,16 @@ export function TradeTable({ trades, isLoading, onDelete, onUpdate }: TradeTable
                 <TableCell className="whitespace-nowrap">
                   {format(new Date(trade.entryDate || trade.createdAt), "MMM dd, yyyy h:mm a")}
                 </TableCell>
-                <TableCell className="font-medium">{trade.asset}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>{trade.asset}</span>
+                    {highlightedId === trade.id && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-primary/40 animate-pulse font-normal">
+                        Last Viewed
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge variant={trade.direction === "LONG" ? "default" : "destructive"}>
                     {trade.direction}

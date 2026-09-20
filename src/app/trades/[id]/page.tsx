@@ -100,11 +100,18 @@ export default function TradeDetailsPage() {
     }
   }
 
+  const handleBack = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("lastViewedTradeId", id);
+    }
+    router.push(`/trades#trade-${id}`);
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/trades")}>
+          <Button variant="ghost" size="icon" onClick={handleBack} title="Back to trades">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">Trade Details</h1>
