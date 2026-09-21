@@ -11,6 +11,48 @@ function isTradeClosed(trade: Trade): boolean {
   return trade.pnl !== undefined && trade.pnl !== null;
 }
 
+/**
+ * Calculates normalized P&L based on a target risk dollar amount (1R = targetRisk).
+ * 1. If realizedRr is provided, normalized PnL = realizedRr * targetRisk.
+ * 2. If stopLoss and entryPrice are provided, calculates R:R and multiplies by targetRisk.
+ * 3. Otherwise, falls back to actual raw trade.pnl.
+ */
+export function calculateNormalizedPnl(trade: Trade, targetRisk: number): number {
+  if (trade.pnl === null || trade.pnl === undefined) return 0;
+
+  // 1. Preferred: Realized R:R is directly recorded
+  if (trade.realizedRr !== null && trade.realizedRr !== undefined) {
+    return Number((trade.realizedRr * targetRisk).toFixed(2));
+  }
+
+  // 2. Secondary: Calculate R:R from Entry, Exit, and Stop Loss
+  if (trade.entryPrice && trade.stopLoss && trade.exitPrice) {
+    const riskDistance = Math.abs(trade.entryPrice - trade.stopLoss);
+    if (riskDistance > 0) {
+      const isLong = trade.direction === 'LONG';
+      const priceMovement = isLong ? (trade.exitPrice - trade.entryPrice) : (trade.entryPrice - trade.exitPrice);
+      const rr = priceMovement / riskDistance;
+      return Number((rr * targetRisk).toFixed(2));
+    }
+  }
+
+  // 3. Fallback: Return actual raw P&L
+  return trade.pnl;
+}
+
+/**
+ * Returns a cloned array of trades where trade.pnl is scaled according to targetRisk.
+ */
+export function getNormalizedTrades(trades: Trade[], targetRisk: number): Trade[] {
+  return trades.map((trade) => {
+    if (trade.pnl === null || trade.pnl === undefined) return trade;
+    return {
+      ...trade,
+      pnl: calculateNormalizedPnl(trade, targetRisk)
+    };
+  });
+}
+
 export function calculateWinRate(trades: Trade[]): number {
   const closedWithPnl = trades.filter(isTradeClosed);
   if (closedWithPnl.length === 0) return 0;

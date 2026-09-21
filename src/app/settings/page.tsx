@@ -2,13 +2,117 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { Eye, EyeOff, Check, X, Key, Trash2, Download } from "lucide-react";
+import { Eye, EyeOff, Check, X, Key, Trash2, Download, Scale, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { useRiskStore } from "@/stores/risk-store";
+
+function RiskSettingsCard() {
+  const { targetRisk, isNormalizedMode, setTargetRisk, setNormalizedMode } = useRiskStore();
+  const [val, setVal] = useState(targetRisk.toString());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setVal(targetRisk.toString());
+  }, [targetRisk]);
+
+  if (!mounted) return null;
+
+  const handleSave = () => {
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > 0) {
+      setTargetRisk(num);
+      toast.success(`Target risk updated to $${num.toLocaleString()}`);
+    } else {
+      toast.error("Please enter a valid positive dollar amount");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Scale className="h-5 w-5 text-primary" /> Risk & Position Sizing ($R Normalization)
+        </CardTitle>
+        <CardDescription>
+          Scale your portfolio statistics to a fixed dollar risk (e.g. $10,000 per trade). This eliminates distortions caused by scaling up your position size over time.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="targetRiskInput">Target Risk per Trade (1R)</Label>
+          <div className="flex gap-2 max-w-sm">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="targetRiskInput"
+                type="number"
+                min="1"
+                step="any"
+                className="pl-7"
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleSave} variant="secondary">
+              Save
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {[500, 1000, 2500, 5000, 10000, 25000].map((amount) => (
+              <Button
+                key={amount}
+                type="button"
+                variant={targetRisk === amount ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setTargetRisk(amount);
+                  setVal(amount.toString());
+                  toast.success(`Target risk set to $${amount.toLocaleString()}`);
+                }}
+              >
+                ${amount >= 1000 ? `${amount / 1000}k` : amount}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-2 border-t">
+          <Label>Default View Mode</Label>
+          <RadioGroup
+            value={isNormalizedMode ? "normalized" : "actual"}
+            onValueChange={(v) => {
+              setNormalizedMode(v === "normalized");
+              toast.success(v === "normalized" ? "Normalized Risk view enabled" : "Actual Cash P&L view enabled");
+            }}
+            className="flex flex-col space-y-2"
+          >
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value="actual" id="view-actual" />
+              <Label htmlFor="view-actual" className="cursor-pointer">
+                <span className="font-semibold block">Actual Broker P&L</span>
+                <span className="text-xs text-muted-foreground">Display actual cash gains and losses recorded at the time of execution.</span>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value="normalized" id="view-normalized" />
+              <Label htmlFor="view-normalized" className="cursor-pointer">
+                <span className="font-semibold block">Normalized Fixed Risk ($R) Mode</span>
+                <span className="text-xs text-muted-foreground">Re-scale all trades to your target risk ($10,000 = 1R) for uniform historical comparison.</span>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -129,6 +233,9 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Risk & Position Sizing ($R Normalization) */}
+      <RiskSettingsCard />
 
       <Card>
         <CardHeader>

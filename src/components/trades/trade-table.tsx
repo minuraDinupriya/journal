@@ -23,8 +23,11 @@ import {
   ArrowUpDown, 
   FlaskConical, 
   Zap, 
-  CheckCircle2
+  CheckCircle2,
+  Scale
 } from "lucide-react"
+import { useRiskStore } from "@/stores/risk-store"
+import { calculateNormalizedPnl } from "@/lib/calculations/trade-metrics"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,6 +59,7 @@ export function TradeTable({
   activeTab = 'LIVE'
 }: TradeTableProps) {
   const router = useRouter()
+  const { targetRisk, isNormalizedMode } = useRiskStore()
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
@@ -118,8 +122,8 @@ export function TradeTable({
     } else if (sortField === 'asset') {
       result = a.asset.localeCompare(b.asset)
     } else if (sortField === 'pnl') {
-      const pnlA = a.pnl || 0
-      const pnlB = b.pnl || 0
+      const pnlA = isNormalizedMode ? calculateNormalizedPnl(a, targetRisk) : (a.pnl || 0)
+      const pnlB = isNormalizedMode ? calculateNormalizedPnl(b, targetRisk) : (b.pnl || 0)
       result = pnlA - pnlB
     }
     return sortOrder === 'asc' ? result : -result
@@ -165,7 +169,15 @@ export function TradeTable({
             <TableHead>Direction</TableHead>
             <TableHead className="text-right">R:R</TableHead>
             <TableHead className="cursor-pointer text-right" onClick={() => handleSort('pnl')}>
-              P&L <ArrowUpDown className="w-3 h-3 inline-block ml-1" />
+              {isNormalizedMode ? (
+                <span className="inline-flex items-center gap-1 text-primary">
+                  <Scale className="w-3 h-3 inline" />
+                  Norm P&L
+                </span>
+              ) : (
+                'P&L'
+              )}
+              <ArrowUpDown className="w-3 h-3 inline-block ml-1" />
             </TableHead>
             <TableHead>Strategy</TableHead>
             <TableHead>Setup</TableHead>
@@ -175,8 +187,9 @@ export function TradeTable({
         </TableHeader>
         <TableBody>
           {sortedTrades.map((trade) => {
-            const isProfit = (trade.pnl || 0) > 0
-            const isLoss = (trade.pnl || 0) < 0
+            const effectivePnl = isNormalizedMode ? calculateNormalizedPnl(trade, targetRisk) : (trade.pnl || 0)
+            const isProfit = effectivePnl > 0
+            const isLoss = effectivePnl < 0
             const emotion = EMOTIONAL_STATES?.find(e => e.value === trade.emotionalState)
 
             return (
@@ -245,7 +258,16 @@ export function TradeTable({
                   )}
                 </TableCell>
                 <TableCell className={`text-right font-medium ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : ''}`}>
-                  {trade.pnl !== null && trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : "-"}
+                  {trade.pnl !== null && trade.pnl !== undefined ? (
+                    <div className="flex flex-col items-end">
+                      <span>{effectivePnl > 0 ? '+' : ''}${effectivePnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      {isNormalizedMode && trade.realizedRr !== null && trade.realizedRr !== undefined && (
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          {trade.realizedRr > 0 ? '+' : ''}{trade.realizedRr.toFixed(2)}R
+                        </span>
+                      )}
+                    </div>
+                  ) : "-"}
                 </TableCell>
                 <TableCell>
                   {trade.strategy ? (

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { DashboardMetrics, EquityPoint, TiltmeterData } from '@/types/metrics';
+import { useRiskStore } from '@/stores/risk-store';
 
 interface TradeScoreData {
   winPercent: number
@@ -15,6 +16,7 @@ interface TradeScoreData {
 }
 
 export function useMetrics() {
+  const { targetRisk, isNormalizedMode } = useRiskStore();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [equityCurve, setEquityCurve] = useState<EquityPoint[]>([]);
   const [tiltmeter, setTiltmeter] = useState<TiltmeterData[]>([]);
@@ -24,11 +26,24 @@ export function useMetrics() {
 
   const [currentTradeType, setCurrentTradeType] = useState<'LIVE' | 'BACKTEST' | 'ALL'>('LIVE');
 
-  const fetchMetrics = useCallback(async (tradeType: 'LIVE' | 'BACKTEST' | 'ALL' = 'LIVE') => {
+  const fetchMetrics = useCallback(async (
+    tradeType: 'LIVE' | 'BACKTEST' | 'ALL' = currentTradeType,
+    customTargetRisk?: number | null
+  ) => {
     setIsLoading(true);
     setCurrentTradeType(tradeType);
     try {
-      const response = await fetch(`/api/metrics?tradeType=${tradeType}`);
+      const activeRisk = customTargetRisk !== undefined 
+        ? customTargetRisk 
+        : (isNormalizedMode ? targetRisk : null);
+
+      const queryParams = new URLSearchParams();
+      queryParams.append('tradeType', tradeType);
+      if (activeRisk && activeRisk > 0) {
+        queryParams.append('targetRisk', activeRisk.toString());
+      }
+
+      const response = await fetch(`/api/metrics?${queryParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch metrics');
       }
@@ -44,11 +59,11 @@ export function useMetrics() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentTradeType, isNormalizedMode, targetRisk]);
 
   useEffect(() => {
-    fetchMetrics('LIVE');
-  }, [fetchMetrics]);
+    fetchMetrics(currentTradeType);
+  }, [isNormalizedMode, targetRisk]);
 
   return {
     metrics,

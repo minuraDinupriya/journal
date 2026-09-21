@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useMetrics } from "@/hooks/use-metrics";
 import { useTrades } from "@/hooks/use-trades";
+import { useRiskStore } from "@/stores/risk-store";
+import { getNormalizedTrades } from "@/lib/calculations/trade-metrics";
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
 import { EquityCurve } from "@/components/dashboard/equity-curve";
 import { Tiltmeter } from "@/components/dashboard/tiltmeter";
@@ -10,6 +12,7 @@ import { TradeScore } from "@/components/dashboard/trade-score";
 import { CumulativePnl } from "@/components/dashboard/cumulative-pnl";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { RecentTrades } from "@/components/dashboard/recent-trades";
+import { RiskNormalizerControl } from "@/components/ui/risk-normalizer-control";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Zap, FlaskConical, Globe } from "lucide-react";
 import { TradeFilter } from "@/types/metrics";
@@ -18,6 +21,7 @@ import { cn } from "@/lib/utils";
 export default function DashboardPage() {
   const [dashboardEnv, setDashboardEnv] = useState<'LIVE' | 'BACKTEST' | 'ALL'>('LIVE');
   const [filters, setFilters] = useState<TradeFilter>({ tradeType: 'LIVE' });
+  const { targetRisk, isNormalizedMode } = useRiskStore();
   
   const { metrics, equityCurve, tiltmeter, tradeScore, isLoading: metricsLoading, refreshMetrics } = useMetrics();
   const { trades, isLoading: tradesLoading, fetchTrades } = useTrades();
@@ -50,6 +54,8 @@ export default function DashboardPage() {
     fetchTrades(merged);
   };
 
+  const displayTrades = isNormalizedMode ? getNormalizedTrades(trades || [], targetRisk) : (trades || []);
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -62,7 +68,10 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Dynamic Risk Normalizer */}
+          <RiskNormalizerControl />
+
           {/* Environment Switcher */}
           <div className="flex items-center p-1 bg-muted/60 border rounded-lg">
             <button
@@ -71,7 +80,7 @@ export default function DashboardPage() {
               className={cn(
                 "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
                 dashboardEnv === 'LIVE' 
-                  ? "bg-background text-foreground shadow-sm font-semibold" 
+                  ? "bg-background text-foreground shadow-xs font-semibold" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -84,7 +93,7 @@ export default function DashboardPage() {
               className={cn(
                 "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
                 dashboardEnv === 'BACKTEST' 
-                  ? "bg-background text-foreground shadow-sm font-semibold" 
+                  ? "bg-background text-foreground shadow-xs font-semibold" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -97,7 +106,7 @@ export default function DashboardPage() {
               className={cn(
                 "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
                 dashboardEnv === 'ALL' 
-                  ? "bg-background text-foreground shadow-sm font-semibold" 
+                  ? "bg-background text-foreground shadow-xs font-semibold" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -136,8 +145,8 @@ export default function DashboardPage() {
       </div>
       
       <div className="space-y-4">
-        <FilterBar onFilterChange={handleFilterChange} trades={trades || []} />
-        <RecentTrades trades={trades || []} isLoading={tradesLoading} />
+        <FilterBar onFilterChange={handleFilterChange} trades={displayTrades} />
+        <RecentTrades trades={displayTrades} isLoading={tradesLoading} />
       </div>
     </div>
   );
