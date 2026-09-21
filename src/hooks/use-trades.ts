@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTradeStore } from '@/stores/trade-store';
 import { TradeFormData } from '@/types/trade';
 import { TradeFilter } from '@/types/metrics';
+import { triggerAutoSyncIfEnabled } from '@/lib/backup/auto-sync-trigger';
 
 export function useTrades() {
   const { 
@@ -73,6 +74,7 @@ export function useTrades() {
       const newTrade = await response.json();
       addTrade(newTrade);
       toast.success('Trade created successfully');
+      triggerAutoSyncIfEnabled();
       return newTrade;
     } catch (err: any) {
       const message = err.message || 'An error occurred while creating the trade';
@@ -98,6 +100,7 @@ export function useTrades() {
 
       removeTrade(id);
       toast.success('Trade deleted successfully');
+      triggerAutoSyncIfEnabled();
     } catch (err: any) {
       const message = err.message || 'An error occurred while deleting the trade';
       setError(message);
@@ -129,6 +132,7 @@ export function useTrades() {
       // Optional: don't show toast for background updates if we don't want to spam the user,
       // but the user didn't complain about the toast. Let's keep it or remove it?
       if (!background) toast.success('Trade updated successfully');
+      triggerAutoSyncIfEnabled();
       return updatedTrade;
     } catch (err: any) {
       const message = err.message || 'An error occurred while updating the trade';
@@ -159,6 +163,7 @@ export function useTrades() {
       });
 
       toast.success(`Moved ${ids.length} trade${ids.length > 1 ? 's' : ''} to ${targetType === 'LIVE' ? 'Live' : 'Backtesting'}`);
+      triggerAutoSyncIfEnabled();
     } catch (err: any) {
       const message = err.message || 'An error occurred while moving trades';
       setError(message);
@@ -185,6 +190,7 @@ export function useTrades() {
 
       ids.forEach((id) => removeTrade(id));
       toast.success(`Deleted ${ids.length} trade${ids.length > 1 ? 's' : ''}`);
+      triggerAutoSyncIfEnabled();
     } catch (err: any) {
       const message = err.message || 'An error occurred while deleting trades';
       setError(message);

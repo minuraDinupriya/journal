@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { useRiskStore } from "@/stores/risk-store";
+import { CloudBackupCard } from "@/components/settings/cloud-backup-card";
 
 function RiskSettingsCard() {
   const { targetRisk, isNormalizedMode, setTargetRisk, setNormalizedMode } = useRiskStore();
@@ -236,6 +237,9 @@ export default function SettingsPage() {
 
       {/* Risk & Position Sizing ($R Normalization) */}
       <RiskSettingsCard />
+
+      {/* Cloud Backup, Password Lock & Auto-Sync */}
+      <CloudBackupCard />
 
       <Card>
         <CardHeader>

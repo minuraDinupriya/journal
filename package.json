@@ -9,7 +9,8 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "backup": "tsx scripts/backup.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.0",
@@ -33,6 +34,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
+    "jszip": "^3.10.2",
     "lucide-react": "^0.344.0",
     "next": "14.1.0",
     "next-themes": "^0.2.1",
@@ -50,6 +52,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.0",
     "@types/node": "^20",
     "@types/papaparse": "^5.3.14",
     "@types/react": "^18",
