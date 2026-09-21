@@ -163,14 +163,15 @@ export async function saveToCloudFolder(
   const fullPath = path.join(folder, filename);
   await fs.writeFile(fullPath, buffer);
 
-  // Retention: keep last 15 backup files in this folder
+  // Retention: keep only the last 3 backup files in this folder
   try {
+    const MAX_RETENTION = 3;
     const files = await fs.readdir(folder);
     const backupFiles = files
       .filter((f) => f.startsWith("trade-journal-backup-") && (f.endsWith(".tjbackup") || f.endsWith(".zip")))
       .map((f) => path.join(folder, f));
 
-    if (backupFiles.length > 15) {
+    if (backupFiles.length > MAX_RETENTION) {
       const stats = await Promise.all(
         backupFiles.map(async (file) => ({
           file,
@@ -178,7 +179,7 @@ export async function saveToCloudFolder(
         }))
       );
       stats.sort((a, b) => b.mtime - a.mtime); // newest first
-      const toDelete = stats.slice(15);
+      const toDelete = stats.slice(MAX_RETENTION);
       for (const item of toDelete) {
         await fs.unlink(item.file).catch(() => {});
       }

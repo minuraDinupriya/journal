@@ -340,7 +340,7 @@ export function CloudBackupCard() {
             </div>
             <p className="text-xs text-muted-foreground">
               Point this to your Google Drive Desktop folder (e.g. <code className="font-mono">G:\My Drive\TradingBackups</code>) or your OneDrive folder.
-              The journal keeps your last 15 backups automatically.
+              The journal keeps your last 3 backups automatically, saving cloud storage.
             </p>
           </div>
 

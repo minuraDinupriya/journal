@@ -65,8 +65,8 @@ export async function uploadToGoogleDrive(
     });
 
     const files = listRes.data.files || [];
-    if (files.length > 15) {
-      const toDelete = files.slice(15);
+    if (files.length > 3) {
+      const toDelete = files.slice(3);
       for (const file of toDelete) {
         if (file.id) {
           await drive.files.delete({ fileId: file.id }).catch(() => {});
