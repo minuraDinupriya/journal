@@ -28,6 +28,7 @@ yarn-error.log*
 .env*.local
 .env
 google-credentials*.json
+tr-*.json
 *.tjbackup
 backups/
 
