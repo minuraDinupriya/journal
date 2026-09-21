@@ -3,6 +3,7 @@ import path from "path";
 import JSZip from "jszip";
 import { prisma } from "@/lib/db/prisma";
 import { encryptBackup, decryptBackup, isEncryptedBackup } from "./crypto";
+import { hasGoogleCredentials, uploadToGoogleDrive } from "./google-drive";
 
 export interface BackupManifest {
   version: number;
@@ -155,7 +156,7 @@ export async function saveToCloudFolder(
   buffer: Buffer,
   filename: string,
   targetFolder?: string
-): Promise<{ savedPath: string; folder: string }> {
+): Promise<{ savedPath: string; folder: string; googleDrive?: { fileId: string; webViewLink?: string; name: string } }> {
   const folder = targetFolder && targetFolder.trim().length > 0 ? targetFolder.trim() : getDefaultCloudPath();
 
   await fs.mkdir(folder, { recursive: true });
@@ -186,7 +187,17 @@ export async function saveToCloudFolder(
     console.warn("Could not clean up old backups:", err);
   }
 
-  return { savedPath: fullPath, folder };
+  // Also upload directly to Google Drive if credentials exist
+  let googleDriveResult = undefined;
+  if (await hasGoogleCredentials()) {
+    try {
+      googleDriveResult = await uploadToGoogleDrive(buffer, filename);
+    } catch (gErr) {
+      console.warn("Google Drive upload error:", gErr);
+    }
+  }
+
+  return { savedPath: fullPath, folder, googleDrive: googleDriveResult };
 }
 
 /**

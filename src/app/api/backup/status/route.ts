@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { getDefaultCloudPath } from "@/lib/backup/backup-manager";
+import { checkGoogleDriveStatus } from "@/lib/backup/google-drive";
 
 export async function GET(request: Request) {
   try {
@@ -34,6 +35,8 @@ export async function GET(request: Request) {
       exists = false;
     }
 
+    const googleDriveStatus = await checkGoogleDriveStatus();
+
     return NextResponse.json({
       folder: targetFolder,
       defaultPath: getDefaultCloudPath(),
@@ -41,6 +44,7 @@ export async function GET(request: Request) {
       latestBackup: backups.length > 0 ? backups[0] : null,
       totalBackups: backups.length,
       backups: backups.slice(0, 5), // return top 5
+      googleDrive: googleDriveStatus,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Failed to get backup status" }, { status: 500 });

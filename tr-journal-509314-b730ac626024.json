@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "tr-journal-509314",
+  "private_key_id": "b730ac626024ba8671e408a2cbc4b92b09193700",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDCAJWI30OR0KT8\nYb5axWw9CBOg91QeXsKUgxeZUjzVg8E8URZkLP/RrftVKAPAKIHfcQhA0LOar6r8\nPE7CJsO5olKwvtlst41z5NLbqfCgWbo01J8yH/FoeOrBPjRnz3/IywVcNx+sMBW4\ngs1R98TwGEJv3bwsg0JOjoPSIYnAN3o1pC/Ioz2bMJ5n/ageFBYO2vkrhB9NWOHS\nj+dGXqM3dSyTYib6YEZrHJpFECnYGdqyCmeoZqFVYSBUaYgsr9sGcIf4yFWdOFeB\nAkGSKrwyscZhJFHuKwXmXzx64Q+3iqfX4FWege+G3HCtfcYaHGv4DFlBdooiCVCP\ndQWvH3dVAgMBAAECggEAI9Eeym/J1kxqgWv8TF7hjl0E3rV68sZ07x1KyJQ9xf+2\nt8+Srjj+m/QekEi8dIgl/h4ss2a0mgzvqPTrZ33nqciVsqrxklhLBcgLw+Famwgl\n0CYnJAZwt+SHFtlIrJfLFEOjQDSvJMeV4wRHKuhvFBKuhV+vI5qyLbWzEaL+fx2M\npK+lTKpfggek7VvrvmFcAUdeU/T54oTowoeOdWSRT/XzsQeWmE4BcjkZVuemsfCe\nL3t7EL7X7wnV1KH3voU5Iwy/iAUvHvcdmC41jF7vvHdzWipC2D3i3+hjmkgFlbtS\nJrfi4xOnepGWv6SmVSQ1kaJ2/p6gO/OHh6Y6U2uVewKBgQDjdGXfeCqixVoW5262\nx2ORAa6k+76QF7l8ci/8W1KEnYTl0D08xMwYp+AstFgJfziFNE/LZgEaE2NZ8su9\njRBriDdRVx1LUllSlCrQVJSXh04zQ9hZ+JYOFwzjBXhLisfz3JonvEPSvCn1CvZg\n/lPmk8RiDCTrUGWL7blIU5rB7wKBgQDaWW/H/McDKAiBUvH1o0zTfc9Wbtuu75K8\n2DIcbb/s9CZ4Glcu9B05Rz09wkrasYZykg7kUYFY4dVjJA/NrlwmayGDzJ015U7p\nWaO/ronLm3wfJUKjQ6DmCqSRnmD+XUGnJgBwySttykMUdBbmH4xq58QjfW7XsJB4\n9O5sh/vO+wKBgH8q174eMDA7CIhfsk2soqUy/JKvUTa8nO7P5LZB1JvieagHSgWM\nvdNXIIW9+q6sm0wWGDrO9/S9PEHQ9kou8Sw9xzfJ7c3r55a80kcR0tX5RyZwWyjK\nTBLqnkDbEQujNvHHt8RZhM3wd8DR9Tf7WatDmHt88LNDitK2AW5Hl/GvAoGAbf72\nL+Iog2+McVHOsHb2geh0Jc+s/cCUxGuJOwcS05TfOEvUtcOmYS+BK3aQbQFXgKoR\ntHVW2ubRr6MADxaSN4xqktHmNLty+Fz+/9Y2doq6iZokqsir6pdb9ju6Ewn5w/GB\n8U92gFWPW2NsEbu86jIdfd93klLRRQ3memg6szcCgYEAwXgH5BCeF+jjzKiUrQbO\nkqZbDVZeR3Pl3z8BfBpvH2EblzDsPYEK4HCrHj8WNBp2p26JXRRANyyJT2s5//m4\ntREaAKd42QJz5JwPiUxFWXm3uVogTw8sTkZxyxlQ356cNYdYnfAD0P5qSyLthkIs\nFizPSdjel9dFm15ttemtZzE=\n-----END PRIVATE KEY-----\n",
+  "client_email": "journal-backup-bot@tr-journal-509314.iam.gserviceaccount.com",
+  "client_id": "104675359374546184208",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/journal-backup-bot%40tr-journal-509314.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
