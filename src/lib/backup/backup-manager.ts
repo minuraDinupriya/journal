@@ -3,7 +3,6 @@ import path from "path";
 import JSZip from "jszip";
 import { prisma } from "@/lib/db/prisma";
 import { encryptBackup, decryptBackup, isEncryptedBackup } from "./crypto";
-import { hasGoogleCredentials, uploadToGoogleDrive } from "./google-drive";
 
 export interface BackupManifest {
   version: number;
@@ -94,7 +93,7 @@ export async function createBackupBundle(options?: { password?: string }) {
       const stat = await fs.stat(filePath);
       if (stat.isFile()) {
         const fileData = await fs.readFile(filePath);
-        chartsFolder?.file(file, fileData);
+        chartsFolder?.file(file, fileData, { compression: "STORE" });
         chartCount++;
       }
     }
@@ -118,11 +117,11 @@ export async function createBackupBundle(options?: { password?: string }) {
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
-  // 5. Generate zip archive buffer
+  // 5. Generate zip archive buffer (Fast compression, images are stored directly without re-compression)
   const rawZipBuffer = await zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",
-    compressionOptions: { level: 9 },
+    compressionOptions: { level: 1 },
   });
 
   const now = new Date();
@@ -156,7 +155,7 @@ export async function saveToCloudFolder(
   buffer: Buffer,
   filename: string,
   targetFolder?: string
-): Promise<{ savedPath: string; folder: string; googleDrive?: { fileId: string; webViewLink?: string; name: string } }> {
+): Promise<{ savedPath: string; folder: string }> {
   const folder = targetFolder && targetFolder.trim().length > 0 ? targetFolder.trim() : getDefaultCloudPath();
 
   await fs.mkdir(folder, { recursive: true });
@@ -188,17 +187,7 @@ export async function saveToCloudFolder(
     console.warn("Could not clean up old backups:", err);
   }
 
-  // Also upload directly to Google Drive if credentials exist
-  let googleDriveResult = undefined;
-  if (await hasGoogleCredentials()) {
-    try {
-      googleDriveResult = await uploadToGoogleDrive(buffer, filename);
-    } catch (gErr) {
-      console.warn("Google Drive upload error:", gErr);
-    }
-  }
-
-  return { savedPath: fullPath, folder, googleDrive: googleDriveResult };
+  return { savedPath: fullPath, folder };
 }
 
 /**
