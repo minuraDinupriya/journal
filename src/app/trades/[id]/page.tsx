@@ -11,6 +11,7 @@ import { format } from "date-fns"
 import { toast } from "sonner"
 import { Trade } from "@/types/trade"
 import { EMOTIONAL_STATES } from "@/lib/constants"
+import { NotionRenderer } from "@/components/ui/notion-renderer"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -261,25 +262,25 @@ export default function TradeDetailsPage() {
             {trade.preTradeNotes && (
               <div>
                 <h3 className="text-lg font-semibold mb-2">Pre-Trade Notes</h3>
-                <p className="whitespace-pre-wrap text-muted-foreground bg-muted p-4 rounded-md">
-                  {trade.preTradeNotes}
-                </p>
+                <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-lg">
+                  <NotionRenderer content={trade.preTradeNotes} />
+                </div>
               </div>
             )}
             {trade.duringTradeNotes && (
               <div>
                 <h3 className="text-lg font-semibold mb-2">During-Trade Notes</h3>
-                <p className="whitespace-pre-wrap text-muted-foreground bg-muted p-4 rounded-md">
-                  {trade.duringTradeNotes}
-                </p>
+                <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-lg">
+                  <NotionRenderer content={trade.duringTradeNotes} />
+                </div>
               </div>
             )}
             {trade.postTradeNotes && (
               <div>
                 <h3 className="text-lg font-semibold mb-2">Post-Trade Notes</h3>
-                <p className="whitespace-pre-wrap text-muted-foreground bg-muted p-4 rounded-md">
-                  {trade.postTradeNotes}
-                </p>
+                <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-lg">
+                  <NotionRenderer content={trade.postTradeNotes} />
+                </div>
               </div>
             )}
           </div>

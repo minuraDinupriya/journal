@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Lock, Plus, Book, Target, Pencil, Trash2 } from "lucide-react"
+import { Lock, Plus, Book, Target, Pencil, Trash2, ArrowUp, ArrowDown, ChevronsUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { VaultItem } from "@/types/vault"
 import { VaultForm } from "./vault-form"
+import { NotionRenderer } from "@/components/ui/notion-renderer"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -34,7 +35,7 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
       if (res.ok) {
         setItems(await res.json())
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to fetch vault items")
     } finally {
       setIsLoading(false)
@@ -54,8 +55,46 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
       } else {
         toast.error("Failed to delete item")
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to delete item")
+    }
+  }
+
+  const handleMove = async (type: 'STRATEGY' | 'KNOWLEDGE', currentIndex: number, direction: 'up' | 'down' | 'top') => {
+    const currentList = items.filter(i => i.type === type)
+    if (direction === 'up' && currentIndex === 0) return
+    if (direction === 'down' && currentIndex === currentList.length - 1) return
+    if (direction === 'top' && currentIndex === 0) return
+
+    const reorderedList = [...currentList]
+    const [movedItem] = reorderedList.splice(currentIndex, 1)
+
+    let targetIndex = currentIndex
+    if (direction === 'up') targetIndex = currentIndex - 1
+    else if (direction === 'down') targetIndex = currentIndex + 1
+    else if (direction === 'top') targetIndex = 0
+
+    reorderedList.splice(targetIndex, 0, movedItem)
+
+    // Re-assign order index 0, 1, 2...
+    const payloadItems = reorderedList.map((item, idx) => ({ id: item.id, order: idx }))
+
+    // Optimistic UI state update
+    const otherTypeItems = items.filter(i => i.type !== type)
+    const updatedTypeItems = reorderedList.map((item, idx) => ({ ...item, order: idx }))
+    setItems([...otherTypeItems, ...updatedTypeItems])
+
+    try {
+      const res = await fetch('/api/vault/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payloadItems })
+      })
+      if (!res.ok) throw new Error()
+      toast.success(direction === 'top' ? 'Moved to top!' : 'Card position updated')
+    } catch {
+      toast.error('Failed to save order')
+      fetchItems()
     }
   }
 
@@ -86,7 +125,7 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">The Vault</h1>
-          <p className="text-muted-foreground">Secure storage for your trading edge.</p>
+          <p className="text-muted-foreground">Secure storage for your trading strategies and secret knowledge.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={lockVault}>
@@ -127,8 +166,18 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {strategies.map((item) => (
-                  <ItemCard key={item.id} item={item} onEdit={() => setEditingItem(item)} onDelete={() => handleDelete(item.id)} />
+                {strategies.map((item, index) => (
+                  <ItemCard 
+                    key={item.id} 
+                    item={item} 
+                    index={index}
+                    total={strategies.length}
+                    onMoveUp={() => handleMove('STRATEGY', index, 'up')}
+                    onMoveDown={() => handleMove('STRATEGY', index, 'down')}
+                    onMoveTop={() => handleMove('STRATEGY', index, 'top')}
+                    onEdit={() => setEditingItem(item)} 
+                    onDelete={() => handleDelete(item.id)} 
+                  />
                 ))}
               </div>
             )}
@@ -146,8 +195,18 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {knowledge.map((item) => (
-                  <ItemCard key={item.id} item={item} onEdit={() => setEditingItem(item)} onDelete={() => handleDelete(item.id)} />
+                {knowledge.map((item, index) => (
+                  <ItemCard 
+                    key={item.id} 
+                    item={item} 
+                    index={index}
+                    total={knowledge.length}
+                    onMoveUp={() => handleMove('KNOWLEDGE', index, 'up')}
+                    onMoveDown={() => handleMove('KNOWLEDGE', index, 'down')}
+                    onMoveTop={() => handleMove('KNOWLEDGE', index, 'top')}
+                    onEdit={() => setEditingItem(item)} 
+                    onDelete={() => handleDelete(item.id)} 
+                  />
                 ))}
               </div>
             )}
@@ -158,7 +217,25 @@ export function VaultDashboard({ lockVault }: { lockVault: () => void }) {
   )
 }
 
-function ItemCard({ item, onEdit, onDelete }: { item: VaultItem, onEdit: () => void, onDelete: () => void }) {
+function ItemCard({ 
+  item, 
+  index,
+  total,
+  onMoveUp,
+  onMoveDown,
+  onMoveTop,
+  onEdit, 
+  onDelete 
+}: { 
+  item: VaultItem
+  index: number
+  total: number
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onMoveTop: () => void
+  onEdit: () => void
+  onDelete: () => void 
+}) {
   const parseImages = (imgs: string | null) => {
     if (!imgs) return []
     try {
@@ -171,18 +248,58 @@ function ItemCard({ item, onEdit, onDelete }: { item: VaultItem, onEdit: () => v
   const images = parseImages(item.images)
 
   return (
-    <Card className="flex flex-col h-full bg-slate-950 border-slate-800">
+    <Card className="flex flex-col h-full bg-slate-950 border-slate-800 hover:border-slate-700 transition-all shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start gap-4">
-          <CardTitle className="text-xl line-clamp-2 leading-tight">{item.title}</CardTitle>
-          <div className="flex shrink-0 gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              #{index + 1}
+            </span>
+            <CardTitle className="text-xl line-clamp-2 leading-tight">{item.title}</CardTitle>
+          </div>
+          
+          {/* Card Controls: Reorder Up/Down/Top & Actions */}
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="flex items-center border border-slate-800 rounded bg-slate-900/60 mr-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-muted-foreground hover:text-indigo-400 disabled:opacity-30" 
+                onClick={onMoveTop} 
+                disabled={index === 0}
+                title="Move to Top (#1 Priority)"
+              >
+                <ChevronsUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-muted-foreground hover:text-indigo-400 disabled:opacity-30" 
+                onClick={onMoveUp} 
+                disabled={index === 0}
+                title="Move Up"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-muted-foreground hover:text-indigo-400 disabled:opacity-30" 
+                onClick={onMoveDown} 
+                disabled={index === total - 1}
+                title="Move Down"
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={onEdit} title="Edit Item">
+              <Pencil className="h-3.5 w-3.5" />
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Delete Item">
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -200,14 +317,20 @@ function ItemCard({ item, onEdit, onDelete }: { item: VaultItem, onEdit: () => v
         </div>
         <CardDescription>{new Date(item.createdAt).toLocaleDateString()}</CardDescription>
       </CardHeader>
+      
       <CardContent className="flex-1 flex flex-col gap-4">
-        <p className="text-sm text-slate-300 whitespace-pre-wrap line-clamp-6 flex-1">
-          {item.content}
-        </p>
+        {/* Notion-style Rendered Content */}
+        <div className="flex-1 max-h-[220px] overflow-hidden relative">
+          <NotionRenderer content={item.content} clampLines={6} />
+          {item.content.length > 200 && (
+            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
+          )}
+        </div>
+
         {images.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-900">
             {images.slice(0, 3).map((img, i) => (
-              <div key={i} className="aspect-video relative rounded overflow-hidden border">
+              <div key={i} className="aspect-video relative rounded overflow-hidden border border-slate-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img} alt="" className="object-cover w-full h-full" />
                 {i === 2 && images.length > 3 && (

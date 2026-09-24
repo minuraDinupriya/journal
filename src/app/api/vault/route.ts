@@ -7,7 +7,10 @@ export async function GET() {
   try {
     const items = await prisma.vaultItem.findMany({
       where: { userId: 'default-user' },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { order: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
     return NextResponse.json(items);
   } catch (error) {
@@ -24,7 +27,8 @@ export async function POST(request: Request) {
         type: data.type,
         title: data.title,
         content: data.content,
-        images: data.images ? JSON.stringify(data.images) : null
+        images: data.images ? JSON.stringify(data.images) : null,
+        order: typeof data.order === 'number' ? data.order : 0
       }
     });
     return NextResponse.json(item);

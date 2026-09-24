@@ -7,6 +7,7 @@ export interface VaultItem {
   title: string;
   content: string;
   images: string | null;
+  order?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,4 +17,5 @@ export interface VaultFormData {
   title: string;
   content: string;
   images: string[];
+  order?: number;
 }

@@ -5,8 +5,8 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { NotionEditor } from "@/components/ui/notion-editor"
 import { ChartUpload } from "@/components/trades/chart-upload"
 import { VoiceRecorder } from "@/components/ui/voice-recorder"
 import { VaultItem, VaultItemType, VaultFormData } from "@/types/vault"
@@ -133,12 +133,13 @@ export function VaultForm({ item, onClose, onSuccess }: VaultFormProps) {
             <Label htmlFor="content">Content & Rules</Label>
             <VoiceRecorder onTranscript={(text) => setContent(prev => prev + (prev ? " " : "") + text)} />
           </div>
-          <Textarea 
+          <NotionEditor 
             id="content" 
-            placeholder="Describe the strategy, entry criteria, exit rules, and conditions..."
+            placeholder="Describe the strategy, entry criteria, exit rules, and conditions... Write in Notion style with # H1, ## H2, **bold**, --- line dividers, and checklists"
             value={content}
-            onChange={e => setContent(e.target.value)}
-            className="min-h-[300px] text-base"
+            onChange={setContent}
+            rows={12}
+            minHeight="320px"
           />
         </div>
 

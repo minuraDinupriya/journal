@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { NotionEditor } from "@/components/ui/notion-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartUpload } from "@/components/trades/chart-upload"
 import { VoiceRecorder } from "@/components/ui/voice-recorder"
@@ -72,6 +73,9 @@ export function TradeForm({ mode, initialData, defaultTradeType, onSubmit, onAut
   const emotionalState = watch("emotionalState")
   const assetClass = watch("assetClass")
   const chartImages = watch("chartImages")
+  const preTradeNotes = watch("preTradeNotes")
+  const duringTradeNotes = watch("duringTradeNotes")
+  const postTradeNotes = watch("postTradeNotes")
 
   const valuesRef = useRef(getValues())
   const isDirtyRef = useRef(isDirty)
@@ -315,26 +319,47 @@ export function TradeForm({ mode, initialData, defaultTradeType, onSubmit, onAut
 
         <div className="space-y-2 md:col-span-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="preTradeNotes">Pre-Trade Notes</Label>
+            <Label htmlFor="preTradeNotes">Pre-Trade Notes (Notion Style)</Label>
             <VoiceRecorder onTranscript={(text) => setValue("preTradeNotes", (getValues("preTradeNotes") ? getValues("preTradeNotes") + " " : "") + text, { shouldDirty: true })} />
           </div>
-          <Textarea id="preTradeNotes" {...register("preTradeNotes")} placeholder="What was your thesis?" rows={3} />
+          <NotionEditor 
+            id="preTradeNotes" 
+            value={preTradeNotes || ""} 
+            onChange={(val) => setValue("preTradeNotes", val, { shouldDirty: true })} 
+            placeholder="What was your thesis? Write in Notion style (# H1, ## H2, **bold**, --- line dividers, checklists)" 
+            rows={4} 
+            minHeight="120px" 
+          />
         </div>
 
         <div className="space-y-2 md:col-span-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="duringTradeNotes">During-Trade Notes</Label>
+            <Label htmlFor="duringTradeNotes">During-Trade Notes (Notion Style)</Label>
             <VoiceRecorder onTranscript={(text) => setValue("duringTradeNotes", (getValues("duringTradeNotes") ? getValues("duringTradeNotes") + " " : "") + text, { shouldDirty: true })} />
           </div>
-          <Textarea id="duringTradeNotes" {...register("duringTradeNotes")} placeholder="What are you thinking while the trade is open?" rows={3} />
+          <NotionEditor 
+            id="duringTradeNotes" 
+            value={duringTradeNotes || ""} 
+            onChange={(val) => setValue("duringTradeNotes", val, { shouldDirty: true })} 
+            placeholder="What are you thinking while the trade is open?" 
+            rows={4} 
+            minHeight="120px" 
+          />
         </div>
 
         <div className="space-y-2 md:col-span-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="postTradeNotes">Post-Trade Notes</Label>
+            <Label htmlFor="postTradeNotes">Post-Trade Notes (Notion Style)</Label>
             <VoiceRecorder onTranscript={(text) => setValue("postTradeNotes", (getValues("postTradeNotes") ? getValues("postTradeNotes") + " " : "") + text, { shouldDirty: true })} />
           </div>
-          <Textarea id="postTradeNotes" {...register("postTradeNotes")} placeholder="What went well? What could be improved?" rows={3} />
+          <NotionEditor 
+            id="postTradeNotes" 
+            value={postTradeNotes || ""} 
+            onChange={(val) => setValue("postTradeNotes", val, { shouldDirty: true })} 
+            placeholder="What went well? What could be improved?" 
+            rows={4} 
+            minHeight="120px" 
+          />
         </div>
 
         <div className="space-y-2 md:col-span-2">
