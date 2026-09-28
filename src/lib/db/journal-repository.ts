@@ -4,6 +4,7 @@ export type JournalFormData = {
   date: string | Date;
   content: string;
   mood?: number;
+  images?: string[];
 };
 
 export async function createJournalEntry(data: JournalFormData & { userId: string }) {
@@ -14,6 +15,7 @@ export async function createJournalEntry(data: JournalFormData & { userId: strin
         date: new Date(data.date),
         content: data.content,
         mood: data.mood ?? 3,
+        images: data.images ? JSON.stringify(data.images) : null,
       }
     });
   } catch (error) {
@@ -57,6 +59,9 @@ export async function updateJournalEntry(id: string, data: Partial<JournalFormDa
   try {
     const updateData: any = { ...data };
     if (data.date) updateData.date = new Date(data.date);
+    if (data.images !== undefined) {
+      updateData.images = data.images ? JSON.stringify(data.images) : null;
+    }
     
     return await prisma.journalEntry.update({
       where: { id },

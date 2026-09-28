@@ -45,6 +45,7 @@ export const journalEntrySchema = z.object({
   date: z.union([z.string(), z.date()]),
   content: z.string().min(1, "Content cannot be empty"),
   mood: z.number().min(1).max(5).default(3),
+  images: z.array(z.string()).optional(),
 });
 
 export const tradeFilterSchema = z.object({

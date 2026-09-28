@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoodSelector } from "@/components/journal/mood-selector";
 import { VoiceRecorder } from "@/components/ui/voice-recorder";
+import { NotionEditor } from "@/components/ui/notion-editor";
+import { ChartUpload } from "@/components/trades/chart-upload";
 import { JournalEntry, JournalFormData } from "@/types/journal";
 import { Loader2 } from "lucide-react";
 import { toLocalDateString } from "@/lib/utils";
@@ -26,13 +27,21 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
   );
   const [mood, setMood] = useState(initialData?.mood || 3);
   const [content, setContent] = useState(initialData?.content || "");
+  const [images, setImages] = useState<string[]>(() => {
+    if (!initialData?.images) return [];
+    try {
+      return JSON.parse(initialData.images);
+    } catch {
+      return [];
+    }
+  });
   const [internalSaving, setInternalSaving] = useState(false);
 
   const handleSave = async () => {
     if (!content.trim()) return;
     try {
       setInternalSaving(true);
-      await onSave({ date, mood, content });
+      await onSave({ date, mood, content, images });
     } finally {
       setInternalSaving(false);
     }
@@ -51,7 +60,7 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loading, content, date, mood, onSave]);
+  }, [loading, content, date, mood, images, onSave]);
 
   return (
     <div className="space-y-6">
@@ -77,17 +86,27 @@ export function JournalEditor({ initialData, onSave, onCancel, isSaving }: Journ
           <Label htmlFor="content">Journal Entry</Label>
           <VoiceRecorder onTranscript={(text) => setContent(prev => prev + (prev ? " " : "") + text)} />
         </div>
-        <Textarea 
+        <NotionEditor 
           id="content" 
-          placeholder="How did you feel during your trades today? Did you stick to your plan?" 
+          placeholder="How did you feel during your trades today? Did you stick to your plan? (Supports Notion style: # H1, ## H2, **bold**, --- line dividers, checklists)"
           value={content} 
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[150px]"
-          disabled={loading}
+          onChange={setContent}
+          rows={8}
+          minHeight="220px"
         />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="space-y-2">
+        <Label>Attached Screenshots / Charts</Label>
+        <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/50">
+          <ChartUpload value={images} onChange={setImages} />
+          <p className="text-xs text-muted-foreground mt-2">
+            Upload or paste (Ctrl+V) trade screenshots, charts, or psychology reflections.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/60">
         <Button variant="outline" onClick={onCancel} disabled={loading}>
           Cancel
         </Button>

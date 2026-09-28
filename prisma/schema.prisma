@@ -81,6 +81,7 @@ model JournalEntry {
   date      DateTime
   content   String
   mood      Int      @default(3)
+  images    String?  // JSON array of image URLs
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
