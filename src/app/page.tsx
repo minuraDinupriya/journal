@@ -10,6 +10,7 @@ import { EquityCurve } from "@/components/dashboard/equity-curve";
 import { Tiltmeter } from "@/components/dashboard/tiltmeter";
 import { TradeScore } from "@/components/dashboard/trade-score";
 import { CumulativePnl } from "@/components/dashboard/cumulative-pnl";
+import { TradeTimePerformance } from "@/components/dashboard/trade-time-performance";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { RecentTrades } from "@/components/dashboard/recent-trades";
 import { RiskNormalizerControl } from "@/components/ui/risk-normalizer-control";
@@ -144,6 +145,9 @@ export default function DashboardPage() {
         </div>
       </div>
       
+      {/* Row 3: Trade Time Performance (Time of Day Scatter Plot & Hourly Edge Analytics) */}
+      <TradeTimePerformance trades={displayTrades} isLoading={tradesLoading} />
+
       <div className="space-y-4">
         <FilterBar onFilterChange={handleFilterChange} trades={displayTrades} />
         <RecentTrades trades={displayTrades} isLoading={tradesLoading} />
