@@ -74,36 +74,58 @@ export function TradeTimePerformance({
   // View state
   const [viewMode, setViewMode] = useState<"scatter" | "hourly">("scatter");
   const [filterType, setFilterType] = useState<"ALL" | "WINNERS" | "LOSERS">("ALL");
-  const [timeRangeMode, setTimeRangeMode] = useState<"market" | "full">("market");
+  const [timeRangeMode, setTimeRangeMode] = useState<"auto" | "market" | "full">("auto");
   const [showSessions, setShowSessions] = useState<boolean>(false);
   const [dotSize, setDotSize] = useState<number>(65);
 
   // Compute points and aggregations
   const allPoints = useMemo(() => calculateTradeTimePoints(trades), [trades]);
 
-  const filteredPoints = useMemo(() => {
-    if (filterType === "WINNERS") return allPoints.filter((p) => p.isWin);
-    if (filterType === "LOSERS") return allPoints.filter((p) => p.isLoss);
-    return allPoints;
-  }, [allPoints, filterType]);
+  // Check if any trades occurred before 8:00 AM (e.g. Asian session, overnight, pre-market)
+  const hasEarlyTrades = useMemo(() => allPoints.some((p) => p.timeDecimal < 8), [allPoints]);
 
-  const hourlyBuckets = useMemo(() => calculateHourlyPerformance(trades), [trades]);
+  // Effective range: "auto" picks 0-24 if early trades exist, otherwise 8-24
+  const effectiveRange = useMemo(() => {
+    if (timeRangeMode === "full") return "full";
+    if (timeRangeMode === "market") return "market";
+    return hasEarlyTrades ? "full" : "market";
+  }, [timeRangeMode, hasEarlyTrades]);
+
+  const filteredPoints = useMemo(() => {
+    let pts = allPoints;
+    if (filterType === "WINNERS") pts = allPoints.filter((p) => p.isWin);
+    if (filterType === "LOSERS") pts = allPoints.filter((p) => p.isLoss);
+
+    if (effectiveRange === "market") {
+      return pts.filter((p) => p.timeDecimal >= 8 && p.timeDecimal <= 24);
+    }
+    return pts;
+  }, [allPoints, filterType, effectiveRange]);
+
+  const hourlyBuckets = useMemo(() => {
+    const buckets = calculateHourlyPerformance(trades);
+    if (effectiveRange === "market") {
+      return buckets.filter((b) => b.hour >= 8);
+    }
+    return buckets;
+  }, [trades, effectiveRange]);
+
   const summary = useMemo(() => calculateTimePerformanceSummary(trades), [trades]);
 
   // Determine X-axis domain & ticks
-  // Market hours: 8:00 to 24:00 (matching user's screenshot: 8:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00, 0:00)
+  // Market hours: 8:00 to 24:00
   // Full day: 0:00 to 24:00
   const xDomain = useMemo<[number, number]>(() => {
-    if (timeRangeMode === "market") return [8, 24];
+    if (effectiveRange === "market") return [8, 24];
     return [0, 24];
-  }, [timeRangeMode]);
+  }, [effectiveRange]);
 
   const xTicks = useMemo(() => {
-    if (timeRangeMode === "market") {
+    if (effectiveRange === "market") {
       return [8, 10, 12, 14, 16, 18, 20, 22, 24];
     }
     return [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-  }, [timeRangeMode]);
+  }, [effectiveRange]);
 
   const formatHourTick = (val: number) => {
     if (val === 24 || val === 0) return "0:00";
@@ -185,30 +207,43 @@ export function TradeTimePerformance({
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium text-muted-foreground">Time Range</label>
-                  <div className="grid grid-cols-2 gap-1 bg-muted/50 p-1 rounded-md">
+                  <div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-md">
                     <button
                       type="button"
-                      onClick={() => setTimeRangeMode("market")}
+                      onClick={() => setTimeRangeMode("auto")}
                       className={cn(
-                        "py-1 px-2 text-xs rounded transition-all",
-                        timeRangeMode === "market"
+                        "py-1 px-1.5 text-xs rounded transition-all text-center",
+                        timeRangeMode === "auto"
                           ? "bg-background font-semibold shadow-xs text-foreground"
                           : "text-muted-foreground hover:text-foreground"
                       )}
+                      title="Automatically shows 24h when you have early trades"
                     >
-                      8:00 - 24:00
+                      Auto
                     </button>
                     <button
                       type="button"
                       onClick={() => setTimeRangeMode("full")}
                       className={cn(
-                        "py-1 px-2 text-xs rounded transition-all",
+                        "py-1 px-1.5 text-xs rounded transition-all text-center",
                         timeRangeMode === "full"
                           ? "bg-background font-semibold shadow-xs text-foreground"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       Full 24h
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTimeRangeMode("market")}
+                      className={cn(
+                        "py-1 px-1.5 text-xs rounded transition-all text-center",
+                        timeRangeMode === "market"
+                          ? "bg-background font-semibold shadow-xs text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      8:00-24:00
                     </button>
                   </div>
                 </div>
@@ -393,6 +428,22 @@ export function TradeTimePerformance({
                 {/* Optional Trading Session Overlays */}
                 {showSessions && (
                   <>
+                    {/* Asian Session: 00:00 - 08:00 (shown when full 24h is active) */}
+                    {effectiveRange === "full" && (
+                      <ReferenceArea
+                        x1={0}
+                        x2={8}
+                        fill="#8b5cf6"
+                        fillOpacity={0.04}
+                        label={{
+                          value: "Asia",
+                          position: "insideTopLeft",
+                          fill: "#8b5cf6",
+                          fontSize: 10,
+                          opacity: 0.6,
+                        }}
+                      />
+                    )}
                     {/* London Session: 08:00 - 16:30 */}
                     <ReferenceArea
                       x1={8}
