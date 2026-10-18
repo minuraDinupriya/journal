@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,10 +45,13 @@ import {
   Sparkles,
   AlertTriangle,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
   ExternalLink,
-  Layers,
+  Zap,
+  FlaskConical,
+  Globe,
+  DollarSign,
+  Scale,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Trade } from "@/types/trade";
 import { TradeTimePoint, HourlyPerformanceBucket } from "@/types/metrics";
@@ -58,18 +60,42 @@ import {
   calculateHourlyPerformance,
   calculateTimePerformanceSummary,
 } from "@/lib/calculations/trade-time-metrics";
+import { getNormalizedTrades } from "@/lib/calculations/trade-metrics";
+import { useRiskStore } from "@/stores/risk-store";
 import { formatCurrency, cn } from "@/lib/utils";
 
 interface TradeTimePerformanceProps {
   trades: Trade[];
+  initialEnv?: "LIVE" | "BACKTEST" | "ALL";
   isLoading?: boolean;
 }
 
 export function TradeTimePerformance({
-  trades,
+  trades = [],
+  initialEnv = "LIVE",
   isLoading = false,
 }: TradeTimePerformanceProps) {
   const router = useRouter();
+  const { targetRisk, isNormalizedMode, setNormalizedMode } = useRiskStore();
+
+  // Environment mode (Live / Backtest / All)
+  const [chartEnv, setChartEnv] = useState<"LIVE" | "BACKTEST" | "ALL">(initialEnv);
+
+  // Sync if initialEnv changes from parent dashboard
+  useEffect(() => {
+    if (initialEnv) {
+      setChartEnv(initialEnv);
+    }
+  }, [initialEnv]);
+
+  // Scale mode (Actual cash vs Normalized 1R)
+  const [scaleMode, setScaleMode] = useState<"ACTUAL" | "NORMALIZED">(
+    isNormalizedMode ? "NORMALIZED" : "ACTUAL"
+  );
+
+  useEffect(() => {
+    setScaleMode(isNormalizedMode ? "NORMALIZED" : "ACTUAL");
+  }, [isNormalizedMode]);
 
   // View state
   const [viewMode, setViewMode] = useState<"scatter" | "hourly">("scatter");
@@ -78,10 +104,35 @@ export function TradeTimePerformance({
   const [showSessions, setShowSessions] = useState<boolean>(false);
   const [dotSize, setDotSize] = useState<number>(65);
 
-  // Compute points and aggregations
-  const allPoints = useMemo(() => calculateTradeTimePoints(trades), [trades]);
+  // 1. Separate trades by environment (Live vs Backtest vs All)
+  const liveCount = useMemo(
+    () => (trades || []).filter((t) => (t.tradeType || "LIVE") === "LIVE").length,
+    [trades]
+  );
+  const backtestCount = useMemo(
+    () => (trades || []).filter((t) => t.tradeType === "BACKTEST").length,
+    [trades]
+  );
+  const totalCount = (trades || []).length;
 
-  // Check if any trades occurred before 8:00 AM (e.g. Asian session, overnight, pre-market)
+  const envFilteredTrades = useMemo(() => {
+    if (!trades) return [];
+    if (chartEnv === "ALL") return trades;
+    return trades.filter((t) => (t.tradeType || "LIVE") === chartEnv);
+  }, [trades, chartEnv]);
+
+  // 2. Scale trades if Normalized mode is selected
+  const scaledTrades = useMemo(() => {
+    if (scaleMode === "NORMALIZED") {
+      return getNormalizedTrades(envFilteredTrades, targetRisk);
+    }
+    return envFilteredTrades;
+  }, [envFilteredTrades, scaleMode, targetRisk]);
+
+  // 3. Compute trade points and aggregations on the filtered/scaled dataset
+  const allPoints = useMemo(() => calculateTradeTimePoints(scaledTrades), [scaledTrades]);
+
+  // Check if any trades in current view occurred before 8:00 AM
   const hasEarlyTrades = useMemo(() => allPoints.some((p) => p.timeDecimal < 8), [allPoints]);
 
   // Effective range: "auto" picks 0-24 if early trades exist, otherwise 8-24
@@ -103,18 +154,16 @@ export function TradeTimePerformance({
   }, [allPoints, filterType, effectiveRange]);
 
   const hourlyBuckets = useMemo(() => {
-    const buckets = calculateHourlyPerformance(trades);
+    const buckets = calculateHourlyPerformance(scaledTrades);
     if (effectiveRange === "market") {
       return buckets.filter((b) => b.hour >= 8);
     }
     return buckets;
-  }, [trades, effectiveRange]);
+  }, [scaledTrades, effectiveRange]);
 
-  const summary = useMemo(() => calculateTimePerformanceSummary(trades), [trades]);
+  const summary = useMemo(() => calculateTimePerformanceSummary(scaledTrades), [scaledTrades]);
 
   // Determine X-axis domain & ticks
-  // Market hours: 8:00 to 24:00
-  // Full day: 0:00 to 24:00
   const xDomain = useMemo<[number, number]>(() => {
     if (effectiveRange === "market") return [8, 24];
     return [0, 24];
@@ -134,6 +183,10 @@ export function TradeTimePerformance({
 
   const formatYAxisTick = (val: number) => {
     if (val === 0) return "$0";
+    if (scaleMode === "NORMALIZED") {
+      // In normalized mode, show compact dollar tick
+      return `${val < 0 ? "-" : ""}$${Math.abs(val).toLocaleString()}`;
+    }
     if (Math.abs(val) >= 1000) {
       return `${val < 0 ? "-" : ""}$${Math.abs(val).toLocaleString()}`;
     }
@@ -159,7 +212,7 @@ export function TradeTimePerformance({
   return (
     <Card className="col-span-full border-border/50 bg-card shadow-xs">
       <CardHeader className="pb-3 border-b border-border/30">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Title with Info & Settings */}
           <div className="flex items-center gap-2">
             <CardTitle className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -182,7 +235,8 @@ export function TradeTimePerformance({
                   <p className="font-semibold mb-1">Trade Time Performance</p>
                   <p className="text-muted-foreground">
                     Plots each trade’s P&L against the exact time of day it was entered. Green dots
-                    represent winning trades, and red dots represent losing trades. Click any point to view that trade.
+                    represent winning trades, and red dots represent losing trades. Use the controls to separate
+                    Live vs Backtest trades or view in Normalized Risk mode.
                   </p>
                 </TooltipContent>
               </UiTooltip>
@@ -292,27 +346,111 @@ export function TradeTimePerformance({
             </Popover>
           </div>
 
-          {/* Controls: View Switcher (Scatter vs Bars) & Quick Filter */}
+          {/* Controls: Environment Switcher, Risk Normalizer, Filters & Views */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filter Toggle: All / Winners / Losers */}
+            {/* 1. Environment Switcher (Live / Backtest / All) - User requested feature! */}
+            <div className="flex items-center p-0.5 bg-muted/60 border rounded-lg text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setChartEnv("LIVE")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5",
+                  chartEnv === "LIVE"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="View Live Real-Money Trades Only"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                Live ({liveCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartEnv("BACKTEST")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5",
+                  chartEnv === "BACKTEST"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="View Backtest Simulation Trades Only"
+              >
+                <FlaskConical className="w-3.5 h-3.5 text-purple-400" />
+                Backtests ({backtestCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartEnv("ALL")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5",
+                  chartEnv === "ALL"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="View Combined Live and Backtest Trades"
+              >
+                <Globe className="w-3.5 h-3.5 text-blue-400" />
+                All ({totalCount})
+              </button>
+            </div>
+
+            {/* 2. Scale Switcher: Actual Cash vs Normalized 1R */}
+            <div className="flex items-center p-0.5 bg-muted/60 border rounded-lg text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setScaleMode("ACTUAL");
+                  setNormalizedMode(false);
+                }}
+                className={cn(
+                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1",
+                  scaleMode === "ACTUAL"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="View actual raw cash P&L"
+              >
+                <DollarSign className="w-3 h-3" />
+                Actual
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setScaleMode("NORMALIZED");
+                  setNormalizedMode(true);
+                }}
+                className={cn(
+                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1",
+                  scaleMode === "NORMALIZED"
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title={`Scale to fixed risk per trade (1R = $${targetRisk})`}
+              >
+                <Scale className="w-3 h-3" />
+                Normalized
+              </button>
+            </div>
+
+            {/* 3. Outcome Filter: All / Wins / Losses */}
             <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40 text-xs">
               <button
                 type="button"
                 onClick={() => setFilterType("ALL")}
                 className={cn(
-                  "px-2.5 py-1 rounded-md transition-all font-medium",
+                  "px-2 py-1 rounded-md transition-all font-medium",
                   filterType === "ALL"
                     ? "bg-background text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                All ({allPoints.length})
+                All
               </button>
               <button
                 type="button"
                 onClick={() => setFilterType("WINNERS")}
                 className={cn(
-                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1",
+                  "px-2 py-1 rounded-md transition-all font-medium flex items-center gap-1",
                   filterType === "WINNERS"
                     ? "bg-background text-emerald-500 shadow-xs"
                     : "text-muted-foreground hover:text-emerald-500"
@@ -325,7 +463,7 @@ export function TradeTimePerformance({
                 type="button"
                 onClick={() => setFilterType("LOSERS")}
                 className={cn(
-                  "px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1",
+                  "px-2 py-1 rounded-md transition-all font-medium flex items-center gap-1",
                   filterType === "LOSERS"
                     ? "bg-background text-rose-500 shadow-xs"
                     : "text-muted-foreground hover:text-rose-500"
@@ -336,7 +474,7 @@ export function TradeTimePerformance({
               </button>
             </div>
 
-            {/* View Mode Switcher */}
+            {/* 4. View Mode: Scatter vs Hourly */}
             <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40">
               <Button
                 variant={viewMode === "scatter" ? "secondary" : "ghost"}
@@ -362,9 +500,13 @@ export function TradeTimePerformance({
           </div>
         </div>
 
-        {/* AI & Edge Insights Badges */}
+        {/* AI & Edge Insights Badges (Recalculated for the chosen environment) */}
         {allPoints.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-2.5 text-xs">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">
+              {chartEnv === "LIVE" ? "Live Edge:" : chartEnv === "BACKTEST" ? "Backtest Edge:" : "Overall Edge:"}
+            </span>
+
             {summary.bestHour && summary.bestHour.totalPnl > 0 && (
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
@@ -407,13 +549,17 @@ export function TradeTimePerformance({
         {allPoints.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[340px] text-muted-foreground text-center">
             <Clock className="w-10 h-10 mb-3 text-muted-foreground/40" />
-            <p className="font-medium">No time performance data available</p>
+            <p className="font-medium">
+              No {chartEnv === "LIVE" ? "Live" : chartEnv === "BACKTEST" ? "Backtest" : ""} trades available for this time view
+            </p>
             <p className="text-xs text-muted-foreground/80 mt-1 max-w-sm">
-              Log or import trades with entry timestamps to visualize your most profitable trading hours.
+              {chartEnv === "LIVE"
+                ? "Switch to Backtests or log live trades with entry timestamps to see your live trade time performance."
+                : "Switch to Live or run backtests to populate this chart."}
             </p>
           </div>
         ) : viewMode === "scatter" ? (
-          /* SCATTER CHART VIEW (User requested design) */
+          /* SCATTER CHART VIEW */
           <div className="w-full h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart
@@ -428,7 +574,6 @@ export function TradeTimePerformance({
                 {/* Optional Trading Session Overlays */}
                 {showSessions && (
                   <>
-                    {/* Asian Session: 00:00 - 08:00 (shown when full 24h is active) */}
                     {effectiveRange === "full" && (
                       <ReferenceArea
                         x1={0}
@@ -444,7 +589,6 @@ export function TradeTimePerformance({
                         }}
                       />
                     )}
-                    {/* London Session: 08:00 - 16:30 */}
                     <ReferenceArea
                       x1={8}
                       x2={16.5}
@@ -458,7 +602,6 @@ export function TradeTimePerformance({
                         opacity: 0.6,
                       }}
                     />
-                    {/* New York Session: 13:00 - 21:00 */}
                     <ReferenceArea
                       x1={13}
                       x2={21}
@@ -514,7 +657,7 @@ export function TradeTimePerformance({
                 {/* Custom Tooltip */}
                 <RechartsTooltip
                   cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--muted-foreground)/0.3)" }}
-                  content={<ScatterCustomTooltip />}
+                  content={<ScatterCustomTooltip scaleMode={scaleMode} />}
                 />
 
                 {/* Scatter Points */}
@@ -529,18 +672,23 @@ export function TradeTimePerformance({
                   className="cursor-pointer"
                 >
                   {filteredPoints.map((entry, index) => {
+                    const isBacktest = entry.tradeType === "BACKTEST";
                     const fillColor = entry.isWin
                       ? "#10b981" // Emerald Green for winners
                       : entry.isLoss
                       ? "#ef4444" // Rose Red for losers
                       : "#94a3b8"; // Slate for break-even
 
+                    // In "ALL" view, distinguish Backtest trades with distinct purple border
+                    const strokeColor = chartEnv === "ALL" && isBacktest ? "#c084fc" : fillColor;
+                    const strokeWidth = chartEnv === "ALL" && isBacktest ? 2 : 1;
+
                     return (
                       <Cell
                         key={`cell-${entry.id || index}`}
                         fill={fillColor}
-                        stroke={fillColor}
-                        strokeWidth={1}
+                        stroke={strokeColor}
+                        strokeWidth={strokeWidth}
                         className="transition-transform duration-200 hover:scale-125"
                       />
                     );
@@ -618,7 +766,7 @@ export function TradeTimePerformance({
 }
 
 // Custom Tooltip for Individual Trade Scatter Points
-function ScatterCustomTooltip({ active, payload }: any) {
+function ScatterCustomTooltip({ active, payload, scaleMode }: any) {
   if (!active || !payload || !payload.length) return null;
 
   const data: TradeTimePoint = payload[0].payload;
@@ -626,10 +774,11 @@ function ScatterCustomTooltip({ active, payload }: any) {
 
   const isWin = data.pnl > 0;
   const isLoss = data.pnl < 0;
+  const isBacktest = data.tradeType === "BACKTEST";
 
   return (
-    <div className="rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[210px] animate-in fade-in-50 duration-150">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+    <div className="rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[220px] animate-in fade-in-50 duration-150">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 gap-2">
         <div className="flex items-center gap-1.5 font-bold text-slate-200">
           <span>{data.asset.toUpperCase()}</span>
           <Badge
@@ -639,13 +788,23 @@ function ScatterCustomTooltip({ active, payload }: any) {
             {data.direction}
           </Badge>
         </div>
-        <span className="text-[11px] text-muted-foreground font-mono">
-          {data.timeLabel}
-        </span>
+
+        {/* Environment Badge */}
+        {isBacktest ? (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-0.5">
+            <FlaskConical className="w-2.5 h-2.5" /> Backtest
+          </span>
+        ) : (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5">
+            <Zap className="w-2.5 h-2.5" /> Live
+          </span>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">Net P&L:</span>
+        <span className="text-muted-foreground">
+          {scaleMode === "NORMALIZED" ? "Normalized P&L:" : "Net P&L:"}
+        </span>
         <span
           className={cn(
             "font-mono font-bold text-sm",
@@ -669,6 +828,13 @@ function ScatterCustomTooltip({ active, payload }: any) {
           </span>
         </div>
       )}
+
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-muted-foreground">Time of Entry:</span>
+        <span className="font-mono text-slate-200 font-medium">
+          {data.timeLabel}
+        </span>
+      </div>
 
       {data.strategy && (
         <div className="flex items-center justify-between text-[11px]">

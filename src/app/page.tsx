@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMetrics } from "@/hooks/use-metrics";
 import { useTrades } from "@/hooks/use-trades";
 import { useRiskStore } from "@/stores/risk-store";
@@ -55,7 +55,12 @@ export default function DashboardPage() {
     fetchTrades(merged);
   };
 
-  const displayTrades = isNormalizedMode ? getNormalizedTrades(trades || [], targetRisk) : (trades || []);
+  const envFilteredTrades = useMemo(() => {
+    if (dashboardEnv === 'ALL') return trades || [];
+    return (trades || []).filter((t) => (t.tradeType || 'LIVE') === dashboardEnv);
+  }, [trades, dashboardEnv]);
+
+  const displayTrades = isNormalizedMode ? getNormalizedTrades(envFilteredTrades, targetRisk) : envFilteredTrades;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -146,7 +151,11 @@ export default function DashboardPage() {
       </div>
       
       {/* Row 3: Trade Time Performance (Time of Day Scatter Plot & Hourly Edge Analytics) */}
-      <TradeTimePerformance trades={displayTrades} isLoading={tradesLoading} />
+      <TradeTimePerformance 
+        trades={trades || []} 
+        initialEnv={dashboardEnv} 
+        isLoading={tradesLoading} 
+      />
 
       <div className="space-y-4">
         <FilterBar onFilterChange={handleFilterChange} trades={displayTrades} />
