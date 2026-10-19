@@ -656,8 +656,11 @@ export function TradeTimePerformance({
 
                 {/* Custom Tooltip */}
                 <RechartsTooltip
-                  cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--muted-foreground)/0.3)" }}
+                  cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--muted-foreground)/0.3)", pointerEvents: "none" }}
                   content={<ScatterCustomTooltip scaleMode={scaleMode} />}
+                  wrapperStyle={{ pointerEvents: "none", zIndex: 1000 }}
+                  isAnimationActive={false}
+                  offset={15}
                 />
 
                 {/* Scatter Points */}
@@ -689,7 +692,7 @@ export function TradeTimePerformance({
                         fill={fillColor}
                         stroke={strokeColor}
                         strokeWidth={strokeWidth}
-                        className="transition-transform duration-200 hover:scale-125"
+                        className="transition-all duration-150 hover:brightness-125 hover:stroke-white/80"
                       />
                     );
                   })}
@@ -737,7 +740,12 @@ export function TradeTimePerformance({
                   strokeDasharray="4 4"
                 />
 
-                <RechartsTooltip content={<BarCustomTooltip />} />
+                <RechartsTooltip
+                  content={<BarCustomTooltip />}
+                  wrapperStyle={{ pointerEvents: "none", zIndex: 1000 }}
+                  isAnimationActive={false}
+                  offset={10}
+                />
 
                 <Bar dataKey="totalPnl" radius={[4, 4, 0, 0]}>
                   {hourlyBuckets.map((bucket) => {
@@ -777,7 +785,7 @@ function ScatterCustomTooltip({ active, payload, scaleMode }: any) {
   const isBacktest = data.tradeType === "BACKTEST";
 
   return (
-    <div className="rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[220px] animate-in fade-in-50 duration-150">
+    <div className="pointer-events-none select-none rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[220px]">
       <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 gap-2">
         <div className="flex items-center gap-1.5 font-bold text-slate-200">
           <span>{data.asset.toUpperCase()}</span>
@@ -848,7 +856,7 @@ function ScatterCustomTooltip({ active, payload, scaleMode }: any) {
       <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 pt-1 border-t border-slate-900">
         <span>{new Date(data.entryDate).toLocaleDateString()}</span>
         <span className="text-indigo-400 flex items-center gap-0.5 font-medium">
-          Inspect trade <ExternalLink className="w-2.5 h-2.5" />
+          Click dot to open <ExternalLink className="w-2.5 h-2.5" />
         </span>
       </div>
     </div>
@@ -863,7 +871,7 @@ function BarCustomTooltip({ active, payload }: any) {
   if (!data) return null;
 
   return (
-    <div className="rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[200px]">
+    <div className="pointer-events-none select-none rounded-lg border border-border/80 bg-slate-950/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-2 min-w-[200px]">
       <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center justify-between">
         <span>{data.hourRange}</span>
         <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal">
